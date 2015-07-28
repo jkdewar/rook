@@ -23,6 +23,7 @@ static int is_identifier_char(char c);
 static void skip_whitespace(lex_state_t *l);
 static void skip_comment(lex_state_t *l);
 static void skip_comments_and_whitespace(lex_state_t *l);
+static int match_keyword(token_t *token);
 static void read_identifier(lex_state_t *l, token_t *token);
 static void read_number(lex_state_t *l, token_t *token);
 static void read_string(lex_state_t *l, token_t *token);
@@ -34,12 +35,15 @@ void lex(lex_input_t *in, lex_output_t *out) {
 
     l->in = in;
     l->out = out;
+    l->out->s = l->in->s;
     l->ptr = l->in->s;
     l->token_alloced = 1024; /* default reserved size for tokens */
     /* TODO:jkd token list currently does not use allocator, because we use realloc */
+    /* TODO:jkd token list also leaks */
     l->out->tokens = (token_t*)malloc(l->token_alloced * sizeof(token_t));
     l->out->token_count = 0;
-    l->out->error[0] = '\0';
+    l->out->is_error = 0;
+    l->out->error_string[0] = '\0';
     
     if (setjmp(l->jmpbuf)) {
         return;
@@ -61,26 +65,46 @@ void lex(lex_input_t *in, lex_output_t *out) {
 }
 
 /*----------------------------------------------------------------------*/
-void lex_output_free(lex_output_t *out) {
-/*
-    size_t i;
-    for (i = 0; i < out->token_count; ++i) {
-        token_t *token = &out->tokens[i];
-        if (token->type == TK_IDENTIFIER ||
-            token->type == TK_STRING_LITERAL) {
-            free(token->data.s);
-         }
+void lex_token_pos(lex_output_t *out, size_t token_index, token_pos_t *token_pos) {
+    token_t *token;
+    const char *p = out->s;
+    const char *token_start;
+
+    if (out->token_count == 0) {
+        token_pos->line_start = out->s;
+        token_pos->line_end = out->s;
+        token_pos->line_num = 0;
+        token_pos->line_pos = 0;
+        return;
     }
-*/
-    free(out->tokens);
-    out->tokens = NULL;
-    out->token_count = 0;
+
+    if (token_index >= out->token_count) {
+        token = &out->tokens[out->token_count - 1];
+    } else {
+        token = &out->tokens[token_index];
+    }
+    token_start = out->s + token->source_pos;
+    token_pos->line_num = 1;
+    token_pos->line_start = p;
+    while (p < token_start) {
+        if (*p == '\n') {
+            token_pos->line_num += 1;
+            token_pos->line_start = p + 1;
+        }
+        p += 1;
+    }
+    token_pos->line_end = token_pos->line_start;
+    while (*token_pos->line_end != '\0' &&
+           *token_pos->line_end != '\n') {
+        token_pos->line_end += 1;
+    }
+    token_pos->line_pos = token->source_pos - (token_pos->line_start - out->s);
 }
 
 /*----------------------------------------------------------------------*/
 static void error(lex_state_t *l) {
     const char *p;
-    int line_num;
+    size_t line_num;
     const char *line_start;
     const char *line_end;
     char buf[1024];
@@ -103,12 +127,14 @@ static void error(lex_state_t *l) {
         line_end += 1;
     }
 
-    printf("ERROR:%d:%ld\n", line_num, l->ptr - line_start + 1);
+    printf("test.bas:%ld:%ld: lex error\n", line_num, l->ptr - line_start + 1);
     memcpy(buf, line_start, line_end - line_start);
     printf("%s\n", buf);
     for (i = 0; i < l->ptr - line_start; ++i)
         printf(" ");
     printf("^\n");
+
+    l->out->is_error = 1;
 
     longjmp(l->jmpbuf, 1);
 }
@@ -117,9 +143,12 @@ static void error(lex_state_t *l) {
 static int next_token(lex_state_t *l) {
     token_t *token; 
     char c;
+    char cn;
     token = &l->out->tokens[l->out->token_count];
     skip_comments_and_whitespace(l);
-    c = *l->ptr;
+    token->source_pos = l->ptr - l->in->s;
+    c  = *(l->ptr + 0);
+    cn = *(l->ptr + 1);
     if (c == '\0') {
         return 0;
     } else if (c == '\"') {
@@ -128,6 +157,13 @@ static int next_token(lex_state_t *l) {
         read_number(l, token);
     } else if (is_identifier_char(c)) {
         read_identifier(l, token);
+        match_keyword(token);
+    } else if (c == '<' && cn == '=') {
+        token->type = TK_LESS_EQUAL;
+        l->ptr += 2;
+    } else if (c == '>' && cn == '=') {
+        token->type = TK_GREATER_EQUAL;
+        l->ptr += 2;
     } else if (c == '+') {
         token->type = TK_PLUS;
         ++l->ptr;
@@ -139,6 +175,27 @@ static int next_token(lex_state_t *l) {
         ++l->ptr;
     } else if (c == '/') {
         token->type = TK_SLASH;
+        ++l->ptr;
+    } else if (c == '=') {
+        token->type = TK_EQUALS;
+        ++l->ptr;
+    } else if (c == '<') {
+        token->type = TK_LESS;
+        ++l->ptr;
+    } else if (c == '>') {
+        token->type = TK_GREATER;
+        ++l->ptr;
+    } else if (c == '(') {
+        token->type = TK_LBRACKET;
+        ++l->ptr;
+    } else if (c == ')') {
+        token->type = TK_RBRACKET;
+        ++l->ptr;
+    } else if (c == ',') {
+        token->type = TK_COMMA;
+        ++l->ptr;
+    } else if (c == ':') {
+        token->type = TK_COLON;
         ++l->ptr;
     } else {
         error(l);
@@ -209,6 +266,30 @@ static void skip_comments_and_whitespace(lex_state_t *l) {
         if (old == l->ptr)
             break;
     }
+}
+
+/*----------------------------------------------------------------------*/
+static int match_keyword(token_t *token) {
+    static struct { char *str; token_type_t type; } keywords[] = {
+        { "end", TK_END },
+        { "var", TK_VAR },
+        { "function", TK_FUNCTION },
+        { "if", TK_IF },
+        { "for", TK_FOR },
+        { "return", TK_RETURN }
+    };
+    static size_t keyword_count = sizeof(keywords) / sizeof(keywords[0]);
+    size_t i;
+
+    if (token->type != TK_IDENTIFIER)
+        return 0;
+    for (i = 0; i < keyword_count; ++i) {
+        if (strcmp(token->u.s, keywords[i].str) != 0)
+            continue;
+        token->type = keywords[i].type;
+        return 1;
+    }
+    return 0;
 }
 
 /*----------------------------------------------------------------------*/
