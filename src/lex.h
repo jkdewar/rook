@@ -24,11 +24,11 @@ typedef union {
     float f;
     double d;
     char *s;
-} token_data_t;
+} token_union_t;
 
 typedef struct {
     token_type_t type;
-    token_data_t data;
+    token_union_t u;
 } token_t;
 
 #define LEX_ERROR_BUF_SIZE 1024

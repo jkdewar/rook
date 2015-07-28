@@ -229,9 +229,9 @@ static void read_identifier(lex_state_t *l, token_t *token) {
     /* copy identifier string to the token */
     len = end - start;
     token->type = TK_IDENTIFIER;
-    token->data.s = (char *)ALLOC(len + 1);
-    memcpy(token->data.s, start, len);
-    token->data.s[len] = '\0';
+    token->u.s = (char *)ALLOC(len + 1);
+    memcpy(token->u.s, start, len);
+    token->u.s[len] = '\0';
     l->ptr += len;
 }
 
@@ -268,14 +268,14 @@ static void read_number(lex_state_t *l, token_t *token) {
         if (*l->ptr == 'f') {
             ++l->ptr;
             token->type = TK_FLOAT_LITERAL;
-            token->data.f = (float)i + (float)after_dot / (float)after_dot_divisor;
+            token->u.f = (float)i + (float)after_dot / (float)after_dot_divisor;
         } else {
             token->type = TK_DOUBLE_LITERAL;
-            token->data.d = (double)i + (double)after_dot / (double)after_dot_divisor;
+            token->u.d = (double)i + (double)after_dot / (double)after_dot_divisor;
         }
     } else {
         token->type = TK_INT_LITERAL;
-        token->data.i = i;
+        token->u.i = i;
     }
 }
 
@@ -305,7 +305,7 @@ static void read_string(lex_state_t *l, token_t *token) {
     /* copy string to the token */
     len = end - start;
     token->type = TK_STRING_LITERAL;
-    token->data.s = (char *)ALLOC(len + 1);
-    memcpy(token->data.s, start, len);
-    token->data.s[len] = '\0';
+    token->u.s = (char *)ALLOC(len + 1);
+    memcpy(token->u.s, start, len);
+    token->u.s[len] = '\0';
 }

@@ -104,7 +104,7 @@ static ast_statement_t *parse_statement(parse_state_t *p) {
     token = peek_token(p);
     if (token == NULL)
         return NULL;
-    if (token->type == TK_IDENTIFIER && strcmp(token->data.s, "var") == 0) {
+    if (token->type == TK_IDENTIFIER && strcmp(token->u.s, "var") == 0) {
         return parse_declare_var(p);
     }
     return NULL;

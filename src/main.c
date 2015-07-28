@@ -39,19 +39,19 @@ int main(int argc, char **argv) {
         printf("%d: ", i);
         switch (token->type) {
             case TK_INT_LITERAL:        
-                printf("(TK_INT_LITERAL) %d", token->data.i); 
+                printf("(TK_INT_LITERAL) %d", token->u.i);
                 break;
             case TK_FLOAT_LITERAL:      
-                printf("(TK_FLOAT_LITERAL) %f", token->data.f); 
+                printf("(TK_FLOAT_LITERAL) %f", token->u.f);
                 break;
             case TK_DOUBLE_LITERAL:     
-                printf("(TK_DOUBLE_LITERAL) %f", token->data.d); 
+                printf("(TK_DOUBLE_LITERAL) %f", token->u.d);
                 break;
             case TK_IDENTIFIER:         
-                printf("(TK_IDENTIFIER) %s", token->data.s); 
+                printf("(TK_IDENTIFIER) %s", token->u.s);
                 break;
             case TK_STRING_LITERAL:     
-                printf("(TK_STRING_LITERAL) \"%s\"", token->data.s); 
+                printf("(TK_STRING_LITERAL) \"%s\"", token->u.s); 
                 break;
             case TK_PLUS:
                 printf("TK_PLUS");
