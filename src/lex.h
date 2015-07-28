@@ -12,7 +12,11 @@ typedef enum {
     TK_INT_LITERAL,
     TK_FLOAT_LITERAL,
     TK_DOUBLE_LITERAL,
-    TK_STRING_LITERAL
+    TK_STRING_LITERAL,
+    TK_PLUS,
+    TK_MINUS,
+    TK_STAR,
+    TK_SLASH
 } token_type_t;
 
 typedef union {
@@ -37,4 +41,3 @@ typedef struct {
 
 void lex(lex_input_t *in, lex_output_t *out);
 void lex_output_free(lex_output_t *out);
-const char *token_type_str(token_type_t token_type);

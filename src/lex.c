@@ -78,18 +78,6 @@ void lex_output_free(lex_output_t *out) {
 }
 
 /*----------------------------------------------------------------------*/
-const char *token_type_str(token_type_t token_type) {
-    switch (token_type) {
-        case TK_IDENTIFIER:     return "TK_IDENTIFIER";
-        case TK_INT_LITERAL:    return "TK_INT_LITERAL";
-        case TK_FLOAT_LITERAL:  return "TK_FLOAT_LITERAL";
-        case TK_DOUBLE_LITERAL: return "TK_DOUBLE_LITERAL";
-        case TK_STRING_LITERAL: return "TK_STRING_LITERAL";
-    }
-    return "TK_???";
-}
-
-/*----------------------------------------------------------------------*/
 static void error(lex_state_t *l) {
     const char *p;
     int line_num;
@@ -140,6 +128,18 @@ static int next_token(lex_state_t *l) {
         read_number(l, token);
     } else if (is_identifier_char(c)) {
         read_identifier(l, token);
+    } else if (c == '+') {
+        token->type = TK_PLUS;
+        ++l->ptr;
+    } else if (c == '-') {
+        token->type = TK_MINUS;
+        ++l->ptr;
+    } else if (c == '*') {
+        token->type = TK_STAR;
+        ++l->ptr;
+    } else if (c == '/') {
+        token->type = TK_SLASH;
+        ++l->ptr;
     } else {
         error(l);
     }

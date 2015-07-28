@@ -8,3 +8,4 @@ typedef struct {
 } linear_allocator_data_t;
 
 void *linear_alloc(void *user_data, size_t size);
+void linear_free(void *user_data, void *p);

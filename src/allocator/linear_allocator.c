@@ -13,3 +13,8 @@ void *linear_alloc(void *user_data, size_t size) {
     linear_allocator_data->used += size;
     return allocated;
 }
+
+/*----------------------------------------------------------------------*/
+void linear_free(void *user_data, void *p) {
+    /* do nothing */
+}
