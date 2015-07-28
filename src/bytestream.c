@@ -2,6 +2,13 @@
 #include <string.h>
 
 /*----------------------------------------------------------------------*/
+void bytestream_init(bytestream_t *bs, size_t initial_capacity) {
+    bs->start = ALLOCATOR_ALLOC(&bs->allocator, initial_capacity);
+    bs->ptr = bs->start;
+    bs->capacity = initial_capacity;
+}
+
+/*----------------------------------------------------------------------*/
 uint32_t bytestream_loc(bytestream_t *bs) {
     return (uint32_t)(bs->ptr - bs->start);
 }

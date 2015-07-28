@@ -24,6 +24,8 @@ static ast_statement_t *parse_statement_list(parse_state_t *p);
 static ast_statement_t *parse_statement(parse_state_t *p);
 static ast_statement_t *parse_declare_var(parse_state_t *p);
 static ast_statement_t *parse_define_function(parse_state_t *p);
+static ast_statement_t *parse_return_statement(parse_state_t *p);
+static ast_expression_t *parse_logical_expression(parse_state_t *p);
 static ast_expression_t *parse_expression(parse_state_t *p);
 static ast_expression_t *parse_sum_op(parse_state_t *p, ast_expression_t *left);
 static ast_expression_t *parse_signed_term(parse_state_t *p);
@@ -115,6 +117,8 @@ static ast_statement_t *parse_statement(parse_state_t *p) {
         return parse_declare_var(p);
     } else if (test_token(token, TK_FUNCTION)) {
         return parse_define_function(p);
+    } else if (test_token(token, TK_RETURN)) {
+        return parse_return_statement(p);
     }
     next_token(p);
     error(p, "statement expected");
@@ -230,6 +234,36 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
     EXPECT(token, TK_END, "'end' expected");
 
     return statement;
+}
+
+/*----------------------------------------------------------------------*/
+static ast_statement_t *parse_return_statement(parse_state_t *p) {
+    token_t *token;
+    ast_statement_t *statement;
+
+    statement = ALLOC(sizeof(ast_statement_t));
+    statement->type = AST_STATEMENT_RETURN;
+
+    /* return keyword */
+    token = next_token(p);
+    EXPECT(token, TK_RETURN, "'return' expected");
+
+    /* return value? */
+    token = peek_token(p);
+    if (test_token(token, TK_END)) {
+        /* no return value */
+        statement->u.return_statement.return_value_expression = NULL;
+    } else {
+        /* return value */
+        statement->u.return_statement.return_value_expression = parse_logical_expression(p);
+    }
+    return statement;
+}
+
+/*----------------------------------------------------------------------*/
+static ast_expression_t *parse_logical_expression(parse_state_t *p) {
+    /* TODO:jkd */
+    return parse_expression(p);
 }
 
 /*----------------------------------------------------------------------*/

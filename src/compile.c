@@ -22,6 +22,7 @@ void compile(compile_input_t *in, compile_output_t *out) {
 
     c->in = in;
     c->out = out;
+    bytestream_init(&c->out->bytestream, 1024 * 16);
 
     if (setjmp(c->jmpbuf)) {
         return;
@@ -51,6 +52,11 @@ static void error(compile_state_t *p, const char *msg) {
 
 /*----------------------------------------------------------------------*/
 static void compile_statement_list(compile_state_t *c, ast_statement_t *first_statement) {
+    ast_statement_t *statement;
+
+    for (statement = first_statement; statement != NULL; statement = statement->next) {
+        
+    }
 }
 
 /*----------------------------------------------------------------------*/

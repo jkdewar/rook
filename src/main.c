@@ -1,6 +1,6 @@
 #include "lex.h"
 #include "parse.h"
-#include "types.h"
+#include "compile.h"
 #include "allocator/linear_allocator.h"
 #include "allocator/std_heap_allocator.h"
 #include "allocator/general_allocator.h"
@@ -8,36 +8,18 @@
 #include <stdlib.h>
 
 /*----------------------------------------------------------------------*/
-static int test_allocator_speed() {
-    allocator_t allocator;
-    size_t memory_size = 1024 * 1024 * 128;
-    void *memory = malloc(memory_size);
-    int i;
-
-    allocator = make_linear_allocator(memory, memory_size);
-    for (i = 0; i < 100000000; ++i) {
-        allocator.alloc_fn(&allocator, 1);
-    }
-
-    return 0;
-}
-
-/*----------------------------------------------------------------------*/
 static int test_compiler() {
 
     lex_input_t lex_in;
     lex_output_t lex_out;
     const char *s = 
-"// this is a test\n"
-"function foo(x:int):int\n"
-"    var x\n"
-"    var y\n"
-"end\n"
+"function main()\n"
+"    return 1987\n"
 "end\n";
-    int i;
-    token_t *token;
     parse_input_t parse_in;
     parse_output_t parse_out;
+    compile_input_t compile_in;
+    compile_output_t compile_out;
     allocator_t allocator;
     uint8_t memory[1024*1024];
     
@@ -105,6 +87,10 @@ static int test_compiler() {
     parse_in.lex_out = &lex_out;
     parse_in.allocator = allocator;
     parse(&parse_in, &parse_out);
+
+    /* compile */
+    compile_out.bytestream.allocator = allocator;
+    compile(&compile_in, &compile_out);
 
     return 0;
 }

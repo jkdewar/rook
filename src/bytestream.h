@@ -9,6 +9,7 @@ typedef struct {
     allocator_t allocator;
 } bytestream_t;
 
+void bytestream_init(bytestream_t *bs, size_t initial_capacity);
 uint32_t bytestream_loc(bytestream_t *bs);
 void bytestream_pushn(bytestream_t *bs, void *data, size_t size);
 void bytestream_push8(bytestream_t *bs, uint8_t data);
