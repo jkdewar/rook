@@ -12,7 +12,7 @@ typedef struct {
     jmp_buf jmpbuf; /* used for error handling */
 } lex_state_t;
 
-#define ALLOC(SIZE) l->in->allocator.alloc_fn(l->in->allocator.user_data, SIZE)
+#define ALLOC(SIZE) l->in->allocator.alloc_fn(&l->in->allocator, SIZE)
 
 static void error(lex_state_t *l);
 static int next_token(lex_state_t *l);
@@ -107,7 +107,7 @@ static void error(lex_state_t *l) {
     size_t line_num;
     const char *line_start;
     const char *line_end;
-    char buf[1024];
+    char buf[1024]; /* TODO:jkd */
     int i;
 
     /* find the line on which the error occurred */
@@ -129,6 +129,7 @@ static void error(lex_state_t *l) {
 
     printf("test.bas:%ld:%ld: lex error\n", line_num, l->ptr - line_start + 1);
     memcpy(buf, line_start, line_end - line_start);
+    buf[line_end - line_start] = '\0';
     printf("%s\n", buf);
     for (i = 0; i < l->ptr - line_start; ++i)
         printf(" ");

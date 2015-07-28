@@ -1,5 +1,6 @@
 #include "lex.h"
 #include "parse.h"
+#include "types.h"
 #include "allocator/linear_allocator.h"
 #include "allocator/std_heap_allocator.h"
 #include "allocator/general_allocator.h"
@@ -7,42 +8,41 @@
 #include <stdlib.h>
 
 /*----------------------------------------------------------------------*/
-int main(int argc, char **argv) {
+static int test_allocator_speed() {
+    allocator_t allocator;
+    size_t memory_size = 1024 * 1024 * 128;
+    void *memory = malloc(memory_size);
+    int i;
+
+    allocator = make_linear_allocator(memory, memory_size);
+    for (i = 0; i < 100000000; ++i) {
+        allocator.alloc_fn(&allocator, 1);
+    }
+
+    return 0;
+}
+
+/*----------------------------------------------------------------------*/
+static int test_compiler() {
+
     lex_input_t lex_in;
     lex_output_t lex_out;
     const char *s = 
 "// this is a test\n"
-"function @foo(x:int):int\n"
+"function foo(x:int):int\n"
 "    var x\n"
 "    var y\n"
+"end\n"
 "end\n";
-
     int i;
     token_t *token;
     parse_input_t parse_in;
     parse_output_t parse_out;
-
-    uint8_t memory[1024 * 16];
     allocator_t allocator;
-#if 0
-    general_allocator_data_t general_allocator_data;
-
+    uint8_t memory[1024*1024];
+    
     /* create allocator */
-    general_allocator_init(&general_allocator_data, memory, sizeof(memory) / sizeof(memory[0]));
-    allocator.user_data = &general_allocator_data;
-    allocator.alloc_fn = general_allocator_alloc;
-    allocator.free_fn = general_allocator_free;
-#else
-    linear_allocator_data_t linear_allocator_data;
-
-    /* create allocator */
-    linear_allocator_data.start = memory;
-    linear_allocator_data.capacity = sizeof(memory) / sizeof(memory[0]);
-    linear_allocator_data.used = 0;
-    allocator.user_data = &linear_allocator_data;
-    allocator.alloc_fn = linear_alloc;
-    allocator.free_fn = linear_free;
-#endif
+    allocator = make_linear_allocator(memory, sizeof(memory)/sizeof(memory[0]));
 
     /* lex */
     lex_in.s = s;
@@ -107,4 +107,9 @@ int main(int argc, char **argv) {
     parse(&parse_in, &parse_out);
 
     return 0;
+}
+
+/*----------------------------------------------------------------------*/
+int main(int argc, char **argv) {
+    return test_compiler();
 }

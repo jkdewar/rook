@@ -6,14 +6,14 @@
 #include <assert.h>
 
 typedef struct {
-    parse_input_t *parse_in;
-    parse_output_t *parse_out;
+    parse_input_t *in;
+    parse_output_t *out;
     size_t token_index;
     jmp_buf jmpbuf; /* used for error handling */
 } parse_state_t;
 
 #define EXPECT(TOKEN, TYPE, MSG) if (!test_token(TOKEN, TYPE)) { error(p, MSG); }
-#define ALLOC(SIZE) p->parse_in->allocator.alloc_fn(p->parse_in->allocator.user_data, SIZE)
+#define ALLOC(SIZE) p->in->allocator.alloc_fn(&p->in->allocator, SIZE)
 
 static void error(parse_state_t *p, const char *msg);
 static token_t *next_token(parse_state_t *p);
@@ -38,24 +38,24 @@ void parse(parse_input_t *parse_in, parse_output_t *parse_out) {
     parse_state_t parse_state;
     parse_state_t *p = &parse_state;
     
-    p->parse_in = parse_in;
-    p->parse_out = parse_out;
+    p->in = parse_in;
+    p->out = parse_out;
     p->token_index = 0;
 
     if (setjmp(p->jmpbuf)) {
         return;
     }
 
-    p->parse_out->first_statement = parse_statement_list(p);
+    p->out->first_statement = parse_statement_list(p);
 }
 
 /*----------------------------------------------------------------------*/
 static void error(parse_state_t *p, const char *msg) {
     token_pos_t token_pos;
-    char buf[1024];
+    char buf[1024]; /* TODO:jkd */
     int i;
 
-    lex_token_pos(p->parse_in->lex_out, p->token_index == 0 ? 0 : p->token_index - 1, &token_pos);
+    lex_token_pos(p->in->lex_out, p->token_index == 0 ? 0 : p->token_index - 1, &token_pos);
     printf("test.bas:%ld:%ld: error: %s\n", token_pos.line_num, token_pos.line_pos, msg);
     memcpy(buf, token_pos.line_start, token_pos.line_end - token_pos.line_start);
     printf("%s\n", buf);
@@ -67,16 +67,16 @@ static void error(parse_state_t *p, const char *msg) {
 
 /*----------------------------------------------------------------------*/
 static token_t *next_token(parse_state_t *p) {
-    if (p->token_index >= p->parse_in->lex_out->token_count)
+    if (p->token_index >= p->in->lex_out->token_count)
         return NULL;
-    return &p->parse_in->lex_out->tokens[p->token_index++];
+    return &p->in->lex_out->tokens[p->token_index++];
 }
 
 /*----------------------------------------------------------------------*/
 static token_t *peek_token(parse_state_t *p) {
-    if (p->token_index >= p->parse_in->lex_out->token_count)
+    if (p->token_index >= p->in->lex_out->token_count)
         return NULL;
-    return &p->parse_in->lex_out->tokens[p->token_index];
+    return &p->in->lex_out->tokens[p->token_index];
 }
 
 /*----------------------------------------------------------------------*/

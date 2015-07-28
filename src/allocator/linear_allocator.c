@@ -3,18 +3,27 @@
 #include <assert.h>
 
 /*----------------------------------------------------------------------*/
-void *linear_alloc(void *user_data, size_t size) {
-    linear_allocator_data_t *linear_allocator_data;
+allocator_t make_linear_allocator(void *memory, size_t capacity) {
+    allocator_t allocator;
+    allocator.start = memory;
+    allocator.capacity = capacity;
+    allocator.used = 0;
+    allocator.alloc_fn = linear_alloc;
+    allocator.free_fn = linear_free;
+    return allocator;
+}
+
+/*----------------------------------------------------------------------*/
+void *linear_alloc(allocator_t *allocator, size_t size) {
     void *allocated;
 
-    linear_allocator_data = (linear_allocator_data_t *)user_data;
-    assert(linear_allocator_data->capacity - linear_allocator_data->used >= size);
-    allocated = (char *)linear_allocator_data->start + linear_allocator_data->used;
-    linear_allocator_data->used += size;
+    assert(allocator->capacity - allocator->used >= size);
+    allocated = (char *)allocator->start + allocator->used;
+    allocator->used += size;
     return allocated;
 }
 
 /*----------------------------------------------------------------------*/
-void linear_free(void *user_data, void *p) {
+void linear_free(allocator_t *allocator, void *p) {
     /* do nothing */
 }

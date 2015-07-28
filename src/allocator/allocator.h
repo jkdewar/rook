@@ -1,11 +1,10 @@
 #pragma once
 #include <stddef.h>
 
-typedef void *(*alloc_fn_t)(void *, size_t);
-typedef void (*free_fn_t)(void *, void *);
-
-typedef struct {
-    void *user_data;
-    alloc_fn_t alloc_fn;
-    free_fn_t free_fn;
+typedef struct allocator_t {
+    void *start;
+    size_t capacity;
+    size_t used;
+    void *(*alloc_fn)(struct allocator_t *, size_t);
+    void (*free_fn)(struct allocator_t *, void *);
 } allocator_t;

@@ -2,18 +2,22 @@
 #include <stdlib.h>
 
 /*----------------------------------------------------------------------*/
-static void *std_heap_alloc(void *user_data, size_t size) {
+allocator_t make_std_heap_allocator() {
+    allocator_t allocator;
+    allocator.start = NULL;
+    allocator.capacity = ~0;
+    allocator.used = 0;
+    allocator.alloc_fn = std_heap_alloc;
+    allocator.free_fn = std_heap_free;
+    return allocator;
+}
+
+/*----------------------------------------------------------------------*/
+void *std_heap_alloc(allocator_t *allocator, size_t size) {
     return malloc(size);
 }
 
 /*----------------------------------------------------------------------*/
-static void std_heap_free(void *user_data, void *p) {
+void std_heap_free(allocator_t *allocator, void *p) {
     free(p);
 }
-
-/*----------------------------------------------------------------------*/
-allocator_t std_heap_allocator = {
-    NULL,
-    std_heap_alloc,
-    std_heap_free,
-};

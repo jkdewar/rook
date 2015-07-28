@@ -1,11 +1,6 @@
 #pragma once
 #include "allocator/allocator.h"
 
-typedef struct {
-    void *start;
-    size_t capacity;
-    size_t used;
-} linear_allocator_data_t;
-
-void *linear_alloc(void *user_data, size_t size);
-void linear_free(void *user_data, void *p);
+allocator_t make_linear_allocator(void *memory, size_t capacity);
+void *linear_alloc(allocator_t *allocator, size_t size);
+void linear_free(allocator_t *allocator, void *p);

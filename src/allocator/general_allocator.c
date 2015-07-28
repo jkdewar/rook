@@ -1,3 +1,5 @@
+static int blah;
+#if 0
 #include "allocator/general_allocator.h"
 #include <stdint.h>
 #include <assert.h>
@@ -11,22 +13,26 @@ typedef struct allocation_header_t {
 } allocation_header_t;
 
 /*----------------------------------------------------------------------*/
-void general_allocator_init(general_allocator_data_t *allocator,
-                            void *start, size_t capacity) {
+allocator_t make_general_allocator(void *memory, size_t capacity) {
     allocation_header_t *header;
+    allocator_t allocator;
 
-    assert(capacity > sizeof(allocation_header_t));
-    allocator->start = start;
-    header = (allocation_header_t*)allocator->start;
+    header = memory;
     header->is_allocated = 0;
-    header->capacity = capacity - sizeof(allocation_header_t);
+    header->capacity = capacity;
     header->prev = NULL;
     header->next = NULL;
+
+    allocator.start = memory;
+    allocator.capacity = capacity;
+    allocator.used = 0;
+    allocator.alloc_fn = general_allocator_alloc;
+    allocator.free_fn = general_allocator_free;
+    return allocator;
 }
 
 /*----------------------------------------------------------------------*/
-void *general_allocator_alloc(void *user_data, size_t size) {
-    general_allocator_data_t *allocator = (general_allocator_data_t*)user_data;
+void *general_allocator_alloc(allocator_t *allocator, size_t size) {
     allocation_header_t *header;
     allocation_header_t *new_header;
     size_t required_size = size + sizeof(allocation_header_t);
@@ -52,7 +58,7 @@ void *general_allocator_alloc(void *user_data, size_t size) {
 }
 
 /*----------------------------------------------------------------------*/
-void general_allocator_free(void *user_data, void *p) {
+void general_allocator_free(allocator_t *allocator, void *p) {
     allocation_header_t *header;
 
     if (p == NULL) return;
@@ -80,10 +86,11 @@ void general_allocator_free(void *user_data, void *p) {
 }
 
 /*----------------------------------------------------------------------*/
-void general_allocator_debug_dump(general_allocator_data_t *allocator) {
+void general_allocator_debug_dump(allocator_t *allocator) {
     allocation_header_t *header;
 
     for (header = allocator->start; header != NULL; header = header->next) {
         printf("is_allocated:%d capacity:%ld\n", header->is_allocated, header->capacity);
     }
 }
+#endif
