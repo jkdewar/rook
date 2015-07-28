@@ -1,0 +1,17 @@
+*.o
+*.obj
+.git
+.DS_Store
+.sconsign.dblite
+*~
+*.swp
+*.tlog
+*.log
+*.exe
+*.dll
+*.pdb
+*.sdf
+*.opensdf
+premake4/linux/*
+premake4/macosx/*
+premake4/windows/*
