@@ -4,7 +4,7 @@
 
 typedef struct {
     lex_output_t *lex_out;
-    allocator_t allocator;
+    allocator_t *allocator;
 } parse_input_t;
 
 typedef struct {

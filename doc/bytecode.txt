@@ -1,0 +1,55 @@
+PUSHZ -  pushes 'count' zero bytes
+    u8  opcode = 0x00
+    u32 count
+
+STORE - pops 'size' bytes and stores them at 'stack_pos' (relative to bp)
+    u8  opcode = 0x00
+    u8  size
+    s32 stack_pos
+
+LOAD - pushes 'size' bytes from 'stack_pos' (relative to bp)
+    u8  opcode = 0x00
+    u8  size
+    s32 stack_pos
+
+CALL - pushes ip; sets ip to 'address'
+    u8  opcode = 0x00
+    u32 address
+
+FRAME - pushes sp and bp; sets bp to sp; increases sp by 'size' bytes
+    u8  opcode = 0x00
+    u32 size
+
+RET - pops bp; pops sp; pops ip
+    u8 opcode = 0x00
+
+J - sets ip to 'address'
+    u8 opcode = 0x00
+    u32 address
+
+JT - pops one byte; sets ip to 'address' if byte is non-zero
+    u8 opcode = 0x00
+    u32 address
+
+JF - pops one byte; sets ip to 'address' if byte is zero
+    u8 opcode = 0x00
+    u32 address
+
+LGCAND
+LGCOR
+
+PUSH - pushes 'value' onto the stack, of type 'subtype'
+    u8  opcode = 0x00
+    st  value
+
+POP
+ADD
+SUB
+MUL
+DIV
+TE
+TL
+TLE
+TG
+TGE
+

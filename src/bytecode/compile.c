@@ -8,7 +8,6 @@
 
 #define STRINGIZE_DETAIL(x) #x
 #define STRINGIZE(x) STRINGIZE_DETAIL(x)
-
 #define INTERNAL_ERROR(c) error(c, "internal compiler error at " __FILE__ ":" STRINGIZE(__LINE__))
 
 typedef enum {
@@ -102,7 +101,7 @@ static void compile_declare_variable(compile_state_t *c, ast_statement_t *statem
 
     /* add variable to local symbol table */
     /* TODO:jkd check for duplicate symbols */
-    entry = ALLOCATOR_ALLOC(&c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
+    entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
     entry->name = statement->u.declare_variable.token.u.s; /* TODO:jkd copy? */
     entry->next = NULL;
     symbol_table_insert(&c->local_symbol_table, entry);
@@ -116,7 +115,7 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
     c->context = COMPILE_CONTEXT_FUNCTION_BODY;
 
     /* clear local symbol table */
-    symbol_table_clear(&c->local_symbol_table, &c->out->bytestream.allocator);
+    symbol_table_clear(&c->local_symbol_table, c->out->bytestream.allocator);
 
     /* function body */
     compile_statement_list(c, statement->u.define_function.first_statement);

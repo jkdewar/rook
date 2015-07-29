@@ -13,7 +13,7 @@ typedef struct {
 } parse_state_t;
 
 #define EXPECT(TOKEN, TYPE, MSG) if (!test_token(TOKEN, TYPE)) { error(p, MSG); }
-#define ALLOC(SIZE) p->in->allocator.alloc_fn(&p->in->allocator, SIZE)
+#define ALLOC(SIZE) p->in->allocator->alloc_fn(p->in->allocator, SIZE)
 
 static void error(parse_state_t *p, const char *msg);
 static token_t *next_token(parse_state_t *p);

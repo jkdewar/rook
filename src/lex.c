@@ -12,7 +12,7 @@ typedef struct {
     jmp_buf jmpbuf; /* used for error handling */
 } lex_state_t;
 
-#define ALLOC(SIZE) l->in->allocator.alloc_fn(&l->in->allocator, SIZE)
+#define ALLOC(SIZE) l->in->allocator->alloc_fn(l->in->allocator, SIZE)
 
 static void error(lex_state_t *l);
 static int next_token(lex_state_t *l);
@@ -274,7 +274,7 @@ static int match_keyword(token_t *token) {
     static struct { char *str; token_type_t type; } keywords[] = {
         { "end", TK_END },
         { "var", TK_VAR },
-        { "function", TK_FUNCTION },
+        { "func", TK_FUNCTION },
         { "if", TK_IF },
         { "for", TK_FOR },
         { "return", TK_RETURN }

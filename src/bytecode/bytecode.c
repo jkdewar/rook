@@ -1,4 +1,6 @@
 #include "bytecode.h"
+#include <stdio.h>
+#include <string.h>
 
 #define PUSH_OP(OP) bytestream_push8(bs, (uint8_t)(OP))
 #define PUSH_ST(ST) bytestream_push8(bs, (uint8_t)(ST))
@@ -38,9 +40,12 @@ void bcbuild_JF(bytestream_t *bs, uint32_t address, uint32_t *address_loc) {
 
 /*----------------------------------------------------------------------*/
 void bcbuild_PUSH_SI32(bytestream_t *bs, int32_t value) {
-    PUSH_OP(OP_PUSH);
-    PUSH_ST(OP_ST_SI32);
-    PUSH_32(value);
+    instruction_t i;
+    memset(&i, 0xff, sizeof(instruction_t));
+    i.opcode = OP_PUSH;
+    i.subtype = OP_ST_SI32;
+    i.u.push_si32.value = value;
+    bytestream_pushn(bs, &i, sizeof(instruction_t));
 }
 
 /*----------------------------------------------------------------------*/

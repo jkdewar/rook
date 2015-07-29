@@ -27,7 +27,7 @@ typedef struct {
     struct ast_expression_t *return_value_expression;
 } ast_statement_return_t;
 
-typedef struct {
+typedef union {
     ast_statement_declare_variable_t declare_variable;
     ast_statement_define_function_t define_function;
     ast_statement_return_t return_statement;

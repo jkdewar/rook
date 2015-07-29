@@ -6,7 +6,7 @@ typedef struct {
     uint8_t *start;
     size_t capacity;
     uint8_t *ptr;
-    allocator_t allocator;
+    allocator_t *allocator;
 } bytestream_t;
 
 void bytestream_init(bytestream_t *bs, size_t initial_capacity);

@@ -57,7 +57,7 @@ typedef struct {
 
 typedef struct {
     const char *s;
-    allocator_t allocator;
+    allocator_t *allocator;
 } lex_input_t;
 
 typedef struct {
