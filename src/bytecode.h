@@ -4,8 +4,6 @@
 
 typedef enum {
     OP_PUSHZ,
-    OP_PUSH,
-    OP_POP,
     OP_STORE,
     OP_LOAD,
 
@@ -21,6 +19,8 @@ typedef enum {
     OP_LGCOR,
 
 /* with subtype */
+    OP_PUSH,
+    OP_POP,
 
     OP_ADD,
     OP_SUB,
@@ -42,9 +42,11 @@ typedef enum {
     OP_ST_D  /* double (64-bit) */
 } opcode_subtype_t;
 
+void bcbuild_RET(bytestream_t *bs);
 void bcbuild_J(bytestream_t *bs, uint32_t address, uint32_t *address_loc);
 void bcbuild_JT(bytestream_t *bs, uint32_t address, uint32_t *address_loc);
 void bcbuild_JF(bytestream_t *bs, uint32_t address, uint32_t *address_loc);
+void bcbuild_PUSH_SI32(bytestream_t *bs, int32_t value);
 void bcbuild_ADD(bytestream_t *bs, opcode_subtype_t st);
 void bcbuild_SUB(bytestream_t *bs, opcode_subtype_t st);
 void bcbuild_MUL(bytestream_t *bs, opcode_subtype_t st);
