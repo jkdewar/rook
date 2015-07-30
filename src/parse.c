@@ -47,7 +47,7 @@ void parse(parse_input_t *parse_in, parse_output_t *parse_out) {
 
     p->in = parse_in;
     p->out = parse_out;
-    p->out->is_error = 0;
+    p->out->error = 0;
     p->token_index = 0;
 
     if (setjmp(p->jmpbuf)) {
@@ -71,7 +71,7 @@ static void error(parse_state_t *p, const char *msg) {
         printf(" ");
     printf("^\n");
 
-    p->out->is_error = 1;
+    p->out->error = 1;
 
     longjmp(p->jmpbuf, 1);
 }
@@ -458,7 +458,7 @@ static ast_expression_t *parse_compare_op(parse_state_t *p, ast_expression_t *le
         return NULL;
     } else if (token->type == TK_LESS ||
                token->type == TK_LESS_EQUAL ||
-               token->type == TK_EQUALS ||
+               token->type == TK_EQUALS_EQUALS ||
                token->type == TK_GREATER_EQUAL ||
                token->type == TK_GREATER) {
         ast_expression_t *right;

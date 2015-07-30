@@ -1,6 +1,8 @@
 func main():int
-    for var i; 1 > 10; var j do
-        var l
+    if 1 == 2
+        return 1991
+    else
+        return 1992
     end
-    return 1991
+    return 9
 end

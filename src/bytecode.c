@@ -16,15 +16,14 @@ void bcbuild_STORE(bytestream_t *bs, uint32_t size, int32_t stack_pos) {
 }
 
 /*----------------------------------------------------------------------*/
-void bcbuild_FRAME(bytestream_t *bs, uint32_t size, uint32_t *size_loc) {
+void bcbuild_FRAME(bytestream_t *bs, uint32_t size, uint32_t *size_where) {
     INST(OP_FRAME);
     i.u.frame.size = size;
-    if (size_loc != NULL)
-        *size_loc = bytestream_loc(bs);
-    bytestream_pushn(bs, &i, sizeof(instruction_t));
-    if (size_loc != NULL)
-        *size_loc += (uint32_t)((uint8_t*)&i.u.frame.size - (uint8_t*)&i);
+    if (size_where != NULL)
+        *size_where = bytestream_where(bs);
     PUSH();
+    if (size_where != NULL)
+        *size_where += (uint32_t)((uint8_t*)&i.u.frame.size - (uint8_t*)&i);
 }
 
 /*----------------------------------------------------------------------*/
@@ -34,29 +33,29 @@ void bcbuild_RET(bytestream_t *bs) {
 }
 
 /*----------------------------------------------------------------------*/
-static void bcbuild_Jx(bytestream_t *bs, uint8_t opcode, uint32_t address, uint32_t *address_loc) {
+static void bcbuild_Jx(bytestream_t *bs, uint8_t opcode, uint32_t address, uint32_t *address_where) {
     INST(opcode);
-    if (address_loc != NULL)
-        *address_loc = bytestream_loc(bs);
+    if (address_where != NULL)
+        *address_where = bytestream_where(bs);
     i.u.jf.address = address;
     PUSH();
-    if (address_loc != NULL)
-        *address_loc += (uint32_t)((uint8_t*)&i.u.frame.size - (uint8_t*)&i);
+    if (address_where != NULL)
+        *address_where += (uint32_t)((uint8_t*)&i.u.frame.size - (uint8_t*)&i);
 }
 
 /*----------------------------------------------------------------------*/
-void bcbuild_J(bytestream_t *bs, uint32_t address, uint32_t *address_loc) {
-    bcbuild_Jx(bs, OP_J, address, address_loc);
+void bcbuild_J(bytestream_t *bs, uint32_t address, uint32_t *address_where) {
+    bcbuild_Jx(bs, OP_J, address, address_where);
 }
 
 /*----------------------------------------------------------------------*/
-void bcbuild_JT(bytestream_t *bs, uint32_t address, uint32_t *address_loc) {
-    bcbuild_Jx(bs, OP_JT, address, address_loc);
+void bcbuild_JT(bytestream_t *bs, uint32_t address, uint32_t *address_where) {
+    bcbuild_Jx(bs, OP_JT, address, address_where);
 }
 
 /*----------------------------------------------------------------------*/
-void bcbuild_JF(bytestream_t *bs, uint32_t address, uint32_t *address_loc) {
-    bcbuild_Jx(bs, OP_JF, address, address_loc);
+void bcbuild_JF(bytestream_t *bs, uint32_t address, uint32_t *address_where) {
+    bcbuild_Jx(bs, OP_JF, address, address_where);
 }
 
 /*----------------------------------------------------------------------*/

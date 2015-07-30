@@ -42,7 +42,7 @@ void lex(lex_input_t *in, lex_output_t *out) {
     /* TODO:jkd token list also leaks */
     l->out->tokens = (token_t*)malloc(l->token_alloced * sizeof(token_t));
     l->out->token_count = 0;
-    l->out->is_error = 0;
+    l->out->error = 0;
     l->out->error_string[0] = '\0';
 
     if (setjmp(l->jmpbuf)) {
@@ -135,7 +135,7 @@ static void error(lex_state_t *l) {
         printf(" ");
     printf("^\n");
 
-    l->out->is_error = 1;
+    l->out->error = 1;
 
     longjmp(l->jmpbuf, 1);
 }
@@ -161,6 +161,9 @@ static int next_token(lex_state_t *l) {
         match_keyword(token);
     } else if (c == '<' && cn == '=') {
         token->type = TK_LESS_EQUAL;
+        l->ptr += 2;
+    } else if (c == '=' && cn == '=') {
+        token->type = TK_EQUALS_EQUALS;
         l->ptr += 2;
     } else if (c == '>' && cn == '=') {
         token->type = TK_GREATER_EQUAL;

@@ -69,7 +69,7 @@ typedef struct {
     const char *s;
     token_t *tokens;
     size_t token_count;
-    int is_error;
+    int error;
     char error_string[LEX_ERROR_BUF_SIZE];
 } lex_output_t;
 

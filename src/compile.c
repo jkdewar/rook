@@ -43,7 +43,7 @@ void compile(compile_input_t *in, compile_output_t *out) {
 
     c->in = in;
     c->out = out;
-    c->out->is_error = 0;
+    c->out->error = 0;
     bytestream_init(&c->out->bytestream, 1024 * 16);
     c->context = COMPILE_CONTEXT_GLOBAL;
     symbol_table_init(&c->local_symbol_table);
@@ -72,7 +72,7 @@ static void error(compile_state_t *c, const char *msg) {
 #else
     printf("%s\n", msg);
 #endif
-    c->out->is_error = 1;
+    c->out->error = 1;
     longjmp(c->jmpbuf, 1);
 }
 
@@ -178,33 +178,33 @@ static void compile_return(compile_state_t *c, ast_statement_t *statement) {
 
 /*----------------------------------------------------------------------*/
 static void compile_if(compile_state_t *c, ast_statement_t *statement) {
-    uint32_t past_if_address_loc;
-    uint32_t past_else_address_loc;
+    uint32_t else_block_address_loc;
+    uint32_t bottom_address_loc;
     uint32_t addr;
 
     /* if test */
     compile_expression(c, statement->u.if_.condition);
     /* jump past if-block if predicate is false (filled in below) */
-    bcbuild_JF(&c->out->bytestream, 0, &past_if_address_loc); /* dest address calculated below */
+    bcbuild_JF(&c->out->bytestream, 0, &else_block_address_loc); /* dest address calculated below */
 
     /* compile if-block */
     compile_statement_list(c, statement->u.if_.if_block);
 
     if (statement->u.if_.else_block != NULL) {
         /* jump from end of if-block past else-block (filled in below) */
-        bcbuild_J(&c->out->bytestream, 0, &past_else_address_loc);
+        bcbuild_J(&c->out->bytestream, 0, &bottom_address_loc);
     }
 
-    /* fill in past-if address */
-    addr = bytestream_loc(&c->out->bytestream);
-    bytestream_set32(&c->out->bytestream, past_if_address_loc, addr);
+    /* fill in else-block address */
+    addr = bytestream_where(&c->out->bytestream);
+    bytestream_set32(&c->out->bytestream, else_block_address_loc, addr);
 
     if (statement->u.if_.else_block != NULL) {
         /* compile else-block */
         compile_statement_list(c, statement->u.if_.else_block);
-        /* fill in past-else address */
-        addr = bytestream_loc(&c->out->bytestream);
-        bytestream_set32(&c->out->bytestream, past_else_address_loc, addr);
+        /* fill in bottom address */
+        addr = bytestream_where(&c->out->bytestream);
+        bytestream_set32(&c->out->bytestream, bottom_address_loc, addr);
     }
 }
 
@@ -218,7 +218,7 @@ static void compile_for(compile_state_t *c, ast_statement_t *statement) {
     compile_statement_list(c, statement->u.for_.initialize);
 
 /* top: */
-    top_addr = bytestream_loc(&c->out->bytestream);
+    top_addr = bytestream_where(&c->out->bytestream);
 
     /* if condition is false, jump to bottom */
     compile_expression(c, statement->u.for_.condition);
@@ -231,7 +231,7 @@ static void compile_for(compile_state_t *c, ast_statement_t *statement) {
     bcbuild_J(&c->out->bytestream, top_addr, NULL);
 
 /* bottom: */
-    bottom_addr = bytestream_loc(&c->out->bytestream);
+    bottom_addr = bytestream_where(&c->out->bytestream);
     bytestream_set32(&c->out->bytestream, bottom_loc, bottom_addr);
 }
 

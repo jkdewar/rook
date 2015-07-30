@@ -9,7 +9,7 @@ typedef struct {
 
 typedef struct {
     bytestream_t bytestream;
-    int is_error;
+    int error;
 } compile_output_t;
 
 void compile(compile_input_t *in, compile_output_t *out);

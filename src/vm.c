@@ -158,7 +158,7 @@ void vm_run(vm_t *vm) {
                 }
                 break;
             }
-/*- TLE ----------------------------------------------------------------*/
+/*- TL -----------------------------------------------------------------*/
             case P(OP_TL, OP_ST_SI8 ): PUSH_BOOL(POP_SI8 () < POP_SI8 ()); break;
             case P(OP_TL, OP_ST_SI16): PUSH_BOOL(POP_SI16() < POP_SI16()); break;
             case P(OP_TL, OP_ST_SI32): PUSH_BOOL(POP_SI32() < POP_SI32()); break;

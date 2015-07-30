@@ -66,11 +66,11 @@ typedef struct {
 } instruction_t;
 
 void bcbuild_STORE(bytestream_t *bs, uint32_t size, int32_t stack_pos);
-void bcbuild_FRAME(bytestream_t *bs, uint32_t size, uint32_t *size_loc);
+void bcbuild_FRAME(bytestream_t *bs, uint32_t size, uint32_t *size_where);
 void bcbuild_RET(bytestream_t *bs);
-void bcbuild_J(bytestream_t *bs, uint32_t address, uint32_t *address_loc);
-void bcbuild_JT(bytestream_t *bs, uint32_t address, uint32_t *address_loc);
-void bcbuild_JF(bytestream_t *bs, uint32_t address, uint32_t *address_loc);
+void bcbuild_J(bytestream_t *bs, uint32_t address, uint32_t *address_where);
+void bcbuild_JT(bytestream_t *bs, uint32_t address, uint32_t *address_where);
+void bcbuild_JF(bytestream_t *bs, uint32_t address, uint32_t *address_where);
 void bcbuild_PUSH_SI32(bytestream_t *bs, int32_t value);
 void bcbuild_ADD(bytestream_t *bs, opcode_subtype_t st);
 void bcbuild_SUB(bytestream_t *bs, opcode_subtype_t st);

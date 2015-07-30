@@ -9,7 +9,7 @@ void bytestream_init(bytestream_t *bs, size_t initial_capacity) {
 }
 
 /*----------------------------------------------------------------------*/
-uint32_t bytestream_loc(bytestream_t *bs) {
+uint32_t bytestream_where(bytestream_t *bs) {
     return (uint32_t)(bs->ptr - bs->start);
 }
 
