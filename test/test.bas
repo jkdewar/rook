@@ -1,3 +1,6 @@
 func main():int
-    return 12 + 3 * 4
+    if 4294967295
+        return 99
+    end
+    return 77
 end

@@ -48,6 +48,14 @@ void bcbuild_JT(bytestream_t *bs, uint32_t address, uint32_t *address_loc) {
 
 /*----------------------------------------------------------------------*/
 void bcbuild_JF(bytestream_t *bs, uint32_t address, uint32_t *address_loc) {
+    INST
+    i.opcode = OP_JF;
+    if (address_loc != NULL)
+        *address_loc = bytestream_loc(bs);
+    i.u.jf.address = address;
+    bytestream_pushn(bs, &i, sizeof(instruction_t));
+    if (address_loc != NULL)
+        *address_loc += (uint32_t)((uint8_t*)&i.u.frame.size - (uint8_t*)&i);
 }
 
 /*----------------------------------------------------------------------*/

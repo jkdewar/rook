@@ -25,6 +25,7 @@ static ast_statement_t *parse_statement(parse_state_t *p);
 static ast_statement_t *parse_declare_var(parse_state_t *p);
 static ast_statement_t *parse_define_function(parse_state_t *p);
 static ast_statement_t *parse_return_statement(parse_state_t *p);
+static ast_statement_t *parse_if_statement(parse_state_t *p);
 static ast_expression_t *parse_logical_expression(parse_state_t *p);
 static ast_expression_t *parse_logical_op(parse_state_t *p, ast_expression_t *left);
 static ast_expression_t *parse_compare_term(parse_state_t *p);
@@ -42,7 +43,7 @@ static ast_expression_t *parse_value(parse_state_t *p);
 void parse(parse_input_t *parse_in, parse_output_t *parse_out) {
     parse_state_t parse_state;
     parse_state_t *p = &parse_state;
-    
+
     p->in = parse_in;
     p->out = parse_out;
     p->out->is_error = 0;
@@ -126,6 +127,8 @@ static ast_statement_t *parse_statement(parse_state_t *p) {
         return parse_define_function(p);
     } else if (test_token(token, TK_RETURN)) {
         return parse_return_statement(p);
+    } else if (test_token(token, TK_IF)) {
+        return parse_if_statement(p);
     }
     next_token(p);
     error(p, "statement expected");
@@ -264,6 +267,34 @@ static ast_statement_t *parse_return_statement(parse_state_t *p) {
         /* return value */
         statement->u.return_statement.return_value_expression = parse_logical_expression(p);
     }
+    return statement;
+}
+
+/*----------------------------------------------------------------------*/
+static ast_statement_t *parse_if_statement(parse_state_t *p) {
+    token_t *token;
+    ast_statement_t *statement;
+
+    /* if */
+    token = next_token(p);
+    EXPECT(token, TK_IF, "'if' expected");
+
+    statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
+    statement->next = NULL;
+    statement->type = AST_STATEMENT_IF;
+
+    /* if predicate */
+    statement->u.if_statement.if_predicate = parse_logical_expression(p);
+
+    /* if block */
+    statement->u.if_statement.if_block = parse_statement_list(p);
+
+    /* TODO:jkd elseif, else */
+
+    /* end */
+    token = next_token(p);
+    EXPECT(token, TK_END, "'end' expected");
+
     return statement;
 }
 

@@ -30,6 +30,7 @@ static void compile_statement(compile_state_t *c, ast_statement_t *statement);
 static void compile_declare_variable(compile_state_t *c, ast_statement_t *statement);
 static void compile_define_function(compile_state_t *c, ast_statement_t *statement);
 static void compile_return_statement(compile_state_t *c, ast_statement_t *statement);
+static void compile_if_statement(compile_state_t *c, ast_statement_t *statement);
 static void compile_expression(compile_state_t *c, ast_expression_t *expression);
 static void compile_literal(compile_state_t *c, ast_expression_t *expression);
 static void compile_bin_op(compile_state_t *c, ast_expression_t *expression);
@@ -85,12 +86,12 @@ static void compile_statement_list(compile_state_t *c, ast_statement_t *first_st
 
 /*----------------------------------------------------------------------*/
 static void compile_statement(compile_state_t *c, ast_statement_t *statement) {
-
     switch (statement->type) {
         case AST_STATEMENT_DECLARE_VARIABLE: compile_declare_variable(c, statement); break;
         case AST_STATEMENT_DEFINE_FUNCTION: compile_define_function(c, statement); break;
         case AST_STATEMENT_RETURN: compile_return_statement(c, statement); break;
-        default: error(c, "unknown statement type");
+        case AST_STATEMENT_IF: compile_if_statement(c, statement); break;
+        default: INTERNAL_ERROR(c);
     }
 }
 
@@ -154,7 +155,6 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
 
 /*----------------------------------------------------------------------*/
 static void compile_return_statement(compile_state_t *c, ast_statement_t *statement) {
-
     /* return value? */
     if (statement->u.return_statement.return_value_expression) {
         /* return value expression */
@@ -171,6 +171,32 @@ static void compile_return_statement(compile_state_t *c, ast_statement_t *statem
 
     /* return */
     bcbuild_RET(&c->out->bytestream);
+}
+
+/*----------------------------------------------------------------------*/
+static void compile_if_statement(compile_state_t *c, ast_statement_t *statement) {
+    uint32_t address_loc;
+    uint32_t past_if_block_addr;
+
+    /* if test */
+    compile_expression(c, statement->u.if_statement.if_predicate);
+
+/* TODO:jkd
+    Type ifExpressionType = ifStatement->ifExpression->GetType();
+    if (ifExpressionType != Type_Bool)
+    {
+        ERROR("bool expression expected");
+    }
+*/
+    /* jump past if-block if predicate is false (filled in below) */
+    bcbuild_JF(&c->out->bytestream, 0, &address_loc); /* dest address calculated below */
+
+    /* compile if-block */
+    compile_statement_list(c, statement->u.if_statement.if_block);
+
+    /* fill in address */
+    past_if_block_addr = bytestream_loc(&c->out->bytestream);
+    bytestream_set32(&c->out->bytestream, address_loc, past_if_block_addr);
 }
 
 /*----------------------------------------------------------------------*/
