@@ -24,8 +24,9 @@ static ast_statement_t *parse_statement_list(parse_state_t *p);
 static ast_statement_t *parse_statement(parse_state_t *p);
 static ast_statement_t *parse_declare_var(parse_state_t *p);
 static ast_statement_t *parse_define_function(parse_state_t *p);
-static ast_statement_t *parse_return_statement(parse_state_t *p);
-static ast_statement_t *parse_if_statement(parse_state_t *p);
+static ast_statement_t *parse_return(parse_state_t *p);
+static ast_statement_t *parse_if(parse_state_t *p);
+static ast_statement_t *parse_for(parse_state_t *p);
 static ast_expression_t *parse_logical_expression(parse_state_t *p);
 static ast_expression_t *parse_logical_op(parse_state_t *p, ast_expression_t *left);
 static ast_expression_t *parse_compare_term(parse_state_t *p);
@@ -127,9 +128,11 @@ static ast_statement_t *parse_statement(parse_state_t *p) {
     } else if (test_token(token, TK_FUNCTION)) {
         return parse_define_function(p);
     } else if (test_token(token, TK_RETURN)) {
-        return parse_return_statement(p);
+        return parse_return(p);
     } else if (test_token(token, TK_IF)) {
-        return parse_if_statement(p);
+        return parse_if(p);
+    } else if (test_token(token, TK_FOR)) {
+        return parse_for(p);
     }
     next_token(p);
     error(p, "statement expected");
@@ -248,7 +251,7 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
 }
 
 /*----------------------------------------------------------------------*/
-static ast_statement_t *parse_return_statement(parse_state_t *p) {
+static ast_statement_t *parse_return(parse_state_t *p) {
     token_t *token;
     ast_statement_t *statement;
 
@@ -272,7 +275,7 @@ static ast_statement_t *parse_return_statement(parse_state_t *p) {
 }
 
 /*----------------------------------------------------------------------*/
-static ast_statement_t *parse_if_statement(parse_state_t *p) {
+static ast_statement_t *parse_if(parse_state_t *p) {
     token_t *token;
     ast_statement_t *statement;
 
@@ -285,7 +288,7 @@ static ast_statement_t *parse_if_statement(parse_state_t *p) {
     statement->type = AST_STATEMENT_IF;
 
     /* if predicate / block */
-    statement->u.if_statement.if_predicate = parse_logical_expression(p);
+    statement->u.if_statement.condition = parse_logical_expression(p);
     statement->u.if_statement.if_block = parse_statement_list(p);
 
     /* else? */
@@ -303,6 +306,99 @@ static ast_statement_t *parse_if_statement(parse_state_t *p) {
     EXPECT(token, TK_END, "'end' expected");
 
     return statement;
+}
+
+/*----------------------------------------------------------------------*/
+static ast_statement_t *parse_for(parse_state_t *p) {
+    token_t *token;
+    ast_statement_t *statement_for;
+    ast_statement_t **next_statement;
+
+    statement_for = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
+    statement_for->next = NULL;
+    statement_for->type = AST_STATEMENT_FOR;
+    statement_for->u.for_statement.initialize = NULL;
+    statement_for->u.for_statement.condition = NULL;
+    statement_for->u.for_statement.increment = NULL;
+
+    /* for */
+    token = next_token(p);
+    EXPECT(token, TK_FOR, "'for' expected");
+
+    /* init statements */
+    next_statement = &statement_for->u.for_statement.initialize;
+    for (;;) {
+        token = peek_token(p);
+        if (test_token(token, TK_SEMICOLON)) {
+            next_token(p);
+            break;
+        }
+        *next_statement = parse_statement(p);
+        if (*next_statement == NULL) {
+            error(p, "statement expected");
+        }
+        next_statement = &((*next_statement)->next);
+        *next_statement = NULL;
+
+        token = peek_token(p);
+        if (test_token(token, TK_SEMICOLON)) {
+            next_token(p);
+            break;
+        } else if (test_token(token, TK_COMMA)) {
+            next_token(p);
+        } else {
+            error(p, "';' or ',' expected");
+        }
+    }
+
+    /* conditional */
+    token = peek_token(p);
+    if (test_token(token, TK_SEMICOLON)) {
+        next_token(p);
+    } else {
+        statement_for->u.for_statement.condition = parse_logical_expression(p);
+        if (statement_for->u.for_statement.condition == NULL) {
+            error(p, "conditional expression expected");
+        }
+        token = peek_token(p);
+        EXPECT(token, TK_SEMICOLON, "';' expected");
+        next_token(p);
+    }
+
+    /* increment statements */
+    next_statement = &statement_for->u.for_statement.increment;
+    for (;;) {
+        token = peek_token(p);
+        if (test_token(token, TK_DO)) {
+            next_token(p);
+            break;
+        }
+        *next_statement = parse_statement(p);
+        if (*next_statement == NULL) {
+            error(p, "increment statement or 'do' expected");
+        }
+        next_statement = &((*next_statement)->next);
+        *next_statement = NULL;
+
+        token = peek_token(p);
+        if (test_token(token, TK_DO)) {
+            next_token(p);
+            break;
+        } else if (test_token(token, TK_COMMA)) {
+            next_token(p);
+        } else {
+            error(p, "'do' or ',' expected");
+        }
+    }
+
+    /* block */
+    statement_for->u.for_statement.block = parse_statement_list(p);
+
+    /* end */
+    token = next_token(p);
+    EXPECT(token, TK_END, "'end' expected");
+
+    return statement_for;
 }
 
 /*----------------------------------------------------------------------*/

@@ -198,6 +198,9 @@ static int next_token(lex_state_t *l) {
     } else if (c == ':') {
         token->type = TK_COLON;
         ++l->ptr;
+    } else if (c == ';') {
+        token->type = TK_SEMICOLON;
+        ++l->ptr;
     } else {
         error(l);
     }
@@ -278,6 +281,7 @@ static int match_keyword(token_t *token) {
         { "if", TK_IF },
         { "else", TK_ELSE },
         { "for", TK_FOR },
+        { "do", TK_DO },
         { "return", TK_RETURN },
         { "and", TK_AND },
         { "or", TK_OR }

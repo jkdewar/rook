@@ -24,6 +24,7 @@ typedef enum {
     TK_RBRACKET,
     TK_COMMA,
     TK_COLON,
+    TK_SEMICOLON,
 /* keywords */
     TK_END,
     TK_VAR,
@@ -31,6 +32,7 @@ typedef enum {
     TK_IF,
     TK_ELSE,
     TK_FOR,
+    TK_DO,
     TK_RETURN,
     TK_AND,
     TK_OR

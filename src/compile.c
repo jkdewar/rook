@@ -29,8 +29,9 @@ static void compile_statement_list(compile_state_t *c, ast_statement_t *first_st
 static void compile_statement(compile_state_t *c, ast_statement_t *statement);
 static void compile_declare_variable(compile_state_t *c, ast_statement_t *statement);
 static void compile_define_function(compile_state_t *c, ast_statement_t *statement);
-static void compile_return_statement(compile_state_t *c, ast_statement_t *statement);
-static void compile_if_statement(compile_state_t *c, ast_statement_t *statement);
+static void compile_return(compile_state_t *c, ast_statement_t *statement);
+static void compile_if(compile_state_t *c, ast_statement_t *statement);
+static void compile_for(compile_state_t *c, ast_statement_t *statement);
 static void compile_expression(compile_state_t *c, ast_expression_t *expression);
 static void compile_literal(compile_state_t *c, ast_expression_t *expression);
 static void compile_bin_op(compile_state_t *c, ast_expression_t *expression);
@@ -89,8 +90,9 @@ static void compile_statement(compile_state_t *c, ast_statement_t *statement) {
     switch (statement->type) {
         case AST_STATEMENT_DECLARE_VARIABLE: compile_declare_variable(c, statement); break;
         case AST_STATEMENT_DEFINE_FUNCTION: compile_define_function(c, statement); break;
-        case AST_STATEMENT_RETURN: compile_return_statement(c, statement); break;
-        case AST_STATEMENT_IF: compile_if_statement(c, statement); break;
+        case AST_STATEMENT_RETURN: compile_return(c, statement); break;
+        case AST_STATEMENT_IF: compile_if(c, statement); break;
+        case AST_STATEMENT_FOR: compile_for(c, statement); break;
         default: INTERNAL_ERROR(c);
     }
 }
@@ -154,7 +156,7 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
 }
 
 /*----------------------------------------------------------------------*/
-static void compile_return_statement(compile_state_t *c, ast_statement_t *statement) {
+static void compile_return(compile_state_t *c, ast_statement_t *statement) {
     /* return value? */
     if (statement->u.return_statement.return_value_expression) {
         /* return value expression */
@@ -175,13 +177,13 @@ static void compile_return_statement(compile_state_t *c, ast_statement_t *statem
 }
 
 /*----------------------------------------------------------------------*/
-static void compile_if_statement(compile_state_t *c, ast_statement_t *statement) {
+static void compile_if(compile_state_t *c, ast_statement_t *statement) {
     uint32_t past_if_address_loc;
     uint32_t past_else_address_loc;
     uint32_t addr;
 
     /* if test */
-    compile_expression(c, statement->u.if_statement.if_predicate);
+    compile_expression(c, statement->u.if_statement.condition);
     /* jump past if-block if predicate is false (filled in below) */
     bcbuild_JF(&c->out->bytestream, 0, &past_if_address_loc); /* dest address calculated below */
 
@@ -204,6 +206,33 @@ static void compile_if_statement(compile_state_t *c, ast_statement_t *statement)
         addr = bytestream_loc(&c->out->bytestream);
         bytestream_set32(&c->out->bytestream, past_else_address_loc, addr);
     }
+}
+
+/*----------------------------------------------------------------------*/
+static void compile_for(compile_state_t *c, ast_statement_t *statement) {
+    uint32_t bottom_loc;
+    uint32_t top_addr;
+    uint32_t bottom_addr;
+
+    /* initialize */
+    compile_statement_list(c, statement->u.for_statement.initialize);
+
+/* top: */
+    top_addr = bytestream_loc(&c->out->bytestream);
+
+    /* if condition is false, jump to bottom */
+    compile_expression(c, statement->u.for_statement.condition);
+    bcbuild_JF(&c->out->bytestream, 0, &bottom_loc); /* filled in below */
+
+    /* increment */
+    compile_statement_list(c, statement->u.for_statement.increment);
+
+    /* jump to top */
+    bcbuild_J(&c->out->bytestream, top_addr, NULL);
+
+/* bottom: */
+    bottom_addr = bytestream_loc(&c->out->bytestream);
+    bytestream_set32(&c->out->bytestream, bottom_loc, bottom_addr);
 }
 
 /*----------------------------------------------------------------------*/

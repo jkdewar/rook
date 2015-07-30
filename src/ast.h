@@ -4,7 +4,8 @@ typedef enum {
     AST_STATEMENT_DECLARE_VARIABLE,
     AST_STATEMENT_DEFINE_FUNCTION,
     AST_STATEMENT_RETURN,
-    AST_STATEMENT_IF
+    AST_STATEMENT_IF,
+    AST_STATEMENT_FOR
 } ast_statement_type_t;
 
 typedef struct {
@@ -29,16 +30,24 @@ typedef struct {
 } ast_statement_return_t;
 
 typedef struct {
-    struct ast_expression_t *if_predicate;
+    struct ast_expression_t *condition;
     struct ast_statement_t *if_block;
     struct ast_statement_t *else_block;
 } ast_statement_if_t;
+
+typedef struct {
+    struct ast_statement_t *initialize;
+    struct ast_expression_t *condition;
+    struct ast_statement_t *increment;
+    struct ast_statement_t *block;
+} ast_statement_for_t;
 
 typedef union {
     ast_statement_declare_variable_t declare_variable;
     ast_statement_define_function_t define_function;
     ast_statement_return_t return_statement;
     ast_statement_if_t if_statement;
+    ast_statement_for_t for_statement;
 } ast_statement_union_t;
 
 typedef struct ast_statement_t {
