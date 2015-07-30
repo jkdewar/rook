@@ -9,6 +9,7 @@ typedef struct {
 
 typedef struct {
     struct ast_statement_t *first_statement;
+    int is_error;
 } parse_output_t;
 
 void parse(parse_input_t *in, parse_output_t *out);

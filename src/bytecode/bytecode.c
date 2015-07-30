@@ -50,24 +50,36 @@ void bcbuild_PUSH_SI32(bytestream_t *bs, int32_t value) {
 
 /*----------------------------------------------------------------------*/
 void bcbuild_ADD(bytestream_t *bs, opcode_subtype_t st) {
-    PUSH_OP(OP_ADD);
-    PUSH_ST(st);
+    instruction_t i;
+    memset(&i, 0xff, sizeof(instruction_t));
+    i.opcode = OP_ADD;
+    i.subtype = st;
+    bytestream_pushn(bs, &i, sizeof(instruction_t));
 }
 
 /*----------------------------------------------------------------------*/
 void bcbuild_SUB(bytestream_t *bs, opcode_subtype_t st) {
-    PUSH_OP(OP_SUB);
-    PUSH_ST(st);
+    instruction_t i;
+    memset(&i, 0xff, sizeof(instruction_t));
+    i.opcode = OP_SUB;
+    i.subtype = st;
+    bytestream_pushn(bs, &i, sizeof(instruction_t));
 }
 
 /*----------------------------------------------------------------------*/
 void bcbuild_MUL(bytestream_t *bs, opcode_subtype_t st) {
-    PUSH_OP(OP_MUL);
-    PUSH_ST(st);
+    instruction_t i;
+    memset(&i, 0xff, sizeof(instruction_t));
+    i.opcode = OP_MUL;
+    i.subtype = st;
+    bytestream_pushn(bs, &i, sizeof(instruction_t));
 }
 
 /*----------------------------------------------------------------------*/
 void bcbuild_DIV(bytestream_t *bs, opcode_subtype_t st) {
-    PUSH_OP(OP_DIV);
-    PUSH_ST(st);
+    instruction_t i;
+    memset(&i, 0xff, sizeof(instruction_t));
+    i.opcode = OP_DIV;
+    i.subtype = st;
+    bytestream_pushn(bs, &i, sizeof(instruction_t));
 }

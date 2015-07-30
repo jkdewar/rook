@@ -12,6 +12,13 @@
 #include <stdlib.h>
 
 /*----------------------------------------------------------------------*/
+/* TODO:jkd */
+static int32_t stack_pop_si32(vm_t *vm) {
+    vm->sp -= sizeof(int32_t);
+    return *((int32_t *)&vm->stack[vm->sp]);
+}
+
+/*----------------------------------------------------------------------*/
 int main(int argc, char **argv) {
     lex_input_t lex_in;
     lex_output_t lex_out;
@@ -39,20 +46,22 @@ int main(int argc, char **argv) {
     lex_in.s = source;
     lex_in.allocator = &allocator;
     lex(&lex_in, &lex_out);
-
-    if (lex_out.is_error) {
+    if (lex_out.is_error)
         return -1;
-    }
 
     /* parse */
     parse_in.lex_out = &lex_out;
     parse_in.allocator = &allocator;
     parse(&parse_in, &parse_out);
+    if (parse_out.is_error)
+        return -1;
 
     /* compile */
     compile_in.parse_out = &parse_out;
     compile_out.bytestream.allocator = &allocator;
     compile(&compile_in, &compile_out);
+    if (compile_out.is_error)
+        return -1;
 
     /* dump bytecode */
     {
@@ -75,14 +84,22 @@ int main(int argc, char **argv) {
         disasm(compile_out.bytestream.start, size);
     }
 
+/*
     printf("linear allocator used %ld bytes\n", allocator.used);
+*/
 
     /* run vm */
     {
         vm_t vm;
+        int32_t result;
+
         vm.bytecode = compile_out.bytestream.start;
         vm.bytecode_size = compile_out.bytestream.ptr - compile_out.bytestream.start;
+        vm.stack = ALLOCATOR_ALLOC(&allocator, 1024 * 16);
         vm_run(&vm);
+
+        result = stack_pop_si32(&vm);
+        printf("result: %d\n", result);
     }
 
     return 0;

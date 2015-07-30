@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#define DEBUG_LOGGING
+/*#define DEBUG_LOGGING*/
 
 /*----------------------------------------------------------------------*/
 allocator_t make_linear_allocator(void *memory, size_t capacity) {

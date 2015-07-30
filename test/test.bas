@@ -1,4 +1,4 @@
 func main():int
-    return 123 + 45
+    return 12 + 3 * 4
 end
 

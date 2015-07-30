@@ -50,13 +50,10 @@ typedef enum {
 
 typedef union {
     struct { uint32_t count; } pushz;
-    struct { uint32_t size; int32_t stack_pos; } store;
-    struct { uint32_t size; int32_t stack_pos; } load;
+    struct { uint32_t size; int32_t stack_pos; } store, load;
     struct { uint32_t address; } call;
     struct { uint32_t size; } frame;
-    struct { uint32_t address; } j;
-    struct { uint32_t address; } jt;
-    struct { uint32_t address; } jf;
+    struct { uint32_t address; } j, jt, jf;
     struct { int8_t value; } push_si8;
     struct { int16_t value; } push_si16;
     struct { int32_t value; } push_si32;

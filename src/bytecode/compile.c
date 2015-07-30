@@ -40,6 +40,7 @@ void compile(compile_input_t *in, compile_output_t *out) {
 
     c->in = in;
     c->out = out;
+    c->out->is_error = 0;
     bytestream_init(&c->out->bytestream, 1024 * 16);
     c->context = COMPILE_CONTEXT_GLOBAL;
     symbol_table_init(&c->local_symbol_table);
@@ -68,6 +69,7 @@ static void error(compile_state_t *c, const char *msg) {
 #else
     printf("%s\n", msg);
 #endif
+    c->out->is_error = 1;
     longjmp(c->jmpbuf, 1);
 }
 
@@ -96,7 +98,7 @@ static void compile_declare_variable(compile_state_t *c, ast_statement_t *statem
     symbol_table_entry_t *entry;
 
     if (c->context != COMPILE_CONTEXT_FUNCTION_BODY) {
-        error(c, "variables must be defined in a function body");
+        error(c, "variable defined outside of function body");
     }
 
     /* add variable to local symbol table */

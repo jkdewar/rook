@@ -4,12 +4,12 @@ PUSHZ -  pushes 'count' zero bytes
 
 STORE - pops 'size' bytes and stores them at 'stack_pos' (relative to bp)
     u8  opcode = 0x00
-    u8  size
+    u32 size
     s32 stack_pos
 
 LOAD - pushes 'size' bytes from 'stack_pos' (relative to bp)
     u8  opcode = 0x00
-    u8  size
+    u32 size
     s32 stack_pos
 
 CALL - pushes ip; sets ip to 'address'

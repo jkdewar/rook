@@ -42,6 +42,7 @@ void parse(parse_input_t *parse_in, parse_output_t *parse_out) {
     
     p->in = parse_in;
     p->out = parse_out;
+    p->out->is_error = 0;
     p->token_index = 0;
 
     if (setjmp(p->jmpbuf)) {
@@ -64,6 +65,9 @@ static void error(parse_state_t *p, const char *msg) {
     for (i = 0; i < token_pos.line_pos; ++i)
         printf(" ");
     printf("^\n");
+
+    p->out->is_error = 1;
+
     longjmp(p->jmpbuf, 1);
 }
 
@@ -361,8 +365,19 @@ static ast_expression_t *parse_signed_factor(parse_state_t *p) {
 
 /*----------------------------------------------------------------------*/
 static ast_expression_t *parse_argument(parse_state_t *p) {
-    /* TODO:jkd function call, variable... */
-    return parse_value(p);
+    token_t *token;
+    ast_expression_t *expression;
+
+    token = peek_token(p);
+    if (test_token(token, TK_LBRACKET)) {
+        next_token(p);
+        expression = parse_logical_expression(p);
+        token = next_token(p);
+        EXPECT(token, TK_RBRACKET, "')' expected");
+        return expression;
+    } else {
+        return parse_value(p);
+    }
 }
 
 /*----------------------------------------------------------------------*/

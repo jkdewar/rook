@@ -23,20 +23,20 @@ void disasm(uint8_t *bytecode, size_t size) {
                 print_subtype(inst->subtype);
                 printf(" ");
                 switch (inst->subtype) {
-                    case OP_ST_SI8 : printf("%d"   , inst->u.push_si8 .value);
-                    case OP_ST_SI16: printf("%d"   , inst->u.push_si16.value);
-                    case OP_ST_SI32: printf("%d"   , inst->u.push_si32.value);
-                    case OP_ST_SI64: printf("%lld" , inst->u.push_si64.value);
-                    case OP_ST_UI8 : printf("%ud"  , inst->u.push_ui8 .value);
-                    case OP_ST_UI16: printf("%ud"  , inst->u.push_ui16.value);
-                    case OP_ST_UI32: printf("%ud"  , inst->u.push_ui32.value);
-                    case OP_ST_UI64: printf("%ulld", inst->u.push_ui64.value);
-                    case OP_ST_F   : printf("%f"   , inst->u.push_f   .value);
-                    case OP_ST_D   : printf("%f"   , inst->u.push_d   .value);
+                    case OP_ST_SI8 : printf("%d"   , inst->u.push_si8 .value); break;
+                    case OP_ST_SI16: printf("%d"   , inst->u.push_si16.value); break;
+                    case OP_ST_SI32: printf("%d"   , inst->u.push_si32.value); break;
+                    case OP_ST_SI64: printf("%lld" , inst->u.push_si64.value); break;
+                    case OP_ST_UI8 : printf("%ud"  , inst->u.push_ui8 .value); break;
+                    case OP_ST_UI16: printf("%ud"  , inst->u.push_ui16.value); break;
+                    case OP_ST_UI32: printf("%ud"  , inst->u.push_ui32.value); break;
+                    case OP_ST_UI64: printf("%ulld", inst->u.push_ui64.value); break;
+                    case OP_ST_F   : printf("%f"   , inst->u.push_f   .value); break;
+                    case OP_ST_D   : printf("%f"   , inst->u.push_d   .value); break;
                 }
                 break;
             case OP_ADD:
-                printf("PUSH.");
+                printf("ADD.");
                 print_subtype(inst->subtype);
                 break;
             case OP_SUB:
