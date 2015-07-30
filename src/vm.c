@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#define PUSH_BOOL(X) stack_push_ui8 (vm, X)
 #define PUSH_SI8(X)  stack_push_si8 (vm, X)
 #define PUSH_SI16(X) stack_push_si16(vm, X)
 #define PUSH_SI32(X) stack_push_si32(vm, X)
@@ -15,11 +16,12 @@
 #define PUSH_F(X)    stack_push_f   (vm, X)
 #define PUSH_D(X)    stack_push_d   (vm, X)
 
+#define POP_BOOL() stack_pop_ui8 (vm)
 #define POP_SI8()  stack_pop_si8 (vm)
 #define POP_SI16() stack_pop_si16(vm)
 #define POP_SI32() stack_pop_si32(vm)
 #define POP_SI64() stack_pop_si64(vm)
-#define POP_UI8( ) stack_pop_ui8 (vm)
+#define POP_UI8()  stack_pop_ui8 (vm)
 #define POP_UI16() stack_pop_ui16(vm)
 #define POP_UI32() stack_pop_ui32(vm)
 #define POP_UI64() stack_pop_ui64(vm)
@@ -33,7 +35,7 @@ void vm_run(vm_t *vm) {
     printf("\nRunning VM...\n");
 
     vm->ip = 0;
-    
+
     for (;;) {
         if (vm->ip >= vm->bytecode_size)
             break;
@@ -156,6 +158,61 @@ void vm_run(vm_t *vm) {
                 }
                 break;
             }
+/*- TLE ----------------------------------------------------------------*/
+            case P(OP_TL, OP_ST_SI8 ): PUSH_BOOL(POP_SI8 () < POP_SI8 ()); break;
+            case P(OP_TL, OP_ST_SI16): PUSH_BOOL(POP_SI16() < POP_SI16()); break;
+            case P(OP_TL, OP_ST_SI32): PUSH_BOOL(POP_SI32() < POP_SI32()); break;
+            case P(OP_TL, OP_ST_SI64): PUSH_BOOL(POP_SI64() < POP_SI64()); break;
+            case P(OP_TL, OP_ST_UI8 ): PUSH_BOOL(POP_UI8 () < POP_UI8 ()); break;
+            case P(OP_TL, OP_ST_UI16): PUSH_BOOL(POP_UI16() < POP_UI16()); break;
+            case P(OP_TL, OP_ST_UI32): PUSH_BOOL(POP_UI32() < POP_UI32()); break;
+            case P(OP_TL, OP_ST_UI64): PUSH_BOOL(POP_UI64() < POP_UI64()); break;
+            case P(OP_TL, OP_ST_F   ): PUSH_BOOL(POP_F   () < POP_F   ()); break;
+            case P(OP_TL, OP_ST_D   ): PUSH_BOOL(POP_D   () < POP_D   ()); break;
+/*- TLE ----------------------------------------------------------------*/
+            case P(OP_TLE, OP_ST_SI8 ): PUSH_BOOL(POP_SI8 () <= POP_SI8 ()); break;
+            case P(OP_TLE, OP_ST_SI16): PUSH_BOOL(POP_SI16() <= POP_SI16()); break;
+            case P(OP_TLE, OP_ST_SI32): PUSH_BOOL(POP_SI32() <= POP_SI32()); break;
+            case P(OP_TLE, OP_ST_SI64): PUSH_BOOL(POP_SI64() <= POP_SI64()); break;
+            case P(OP_TLE, OP_ST_UI8 ): PUSH_BOOL(POP_UI8 () <= POP_UI8 ()); break;
+            case P(OP_TLE, OP_ST_UI16): PUSH_BOOL(POP_UI16() <= POP_UI16()); break;
+            case P(OP_TLE, OP_ST_UI32): PUSH_BOOL(POP_UI32() <= POP_UI32()); break;
+            case P(OP_TLE, OP_ST_UI64): PUSH_BOOL(POP_UI64() <= POP_UI64()); break;
+            case P(OP_TLE, OP_ST_F   ): PUSH_BOOL(POP_F   () <= POP_F   ()); break;
+            case P(OP_TLE, OP_ST_D   ): PUSH_BOOL(POP_D   () <= POP_D   ()); break;
+/*- TE -----------------------------------------------------------------*/
+            case P(OP_TE, OP_ST_SI8 ): PUSH_BOOL(POP_SI8 () == POP_SI8 ()); break;
+            case P(OP_TE, OP_ST_SI16): PUSH_BOOL(POP_SI16() == POP_SI16()); break;
+            case P(OP_TE, OP_ST_SI32): PUSH_BOOL(POP_SI32() == POP_SI32()); break;
+            case P(OP_TE, OP_ST_SI64): PUSH_BOOL(POP_SI64() == POP_SI64()); break;
+            case P(OP_TE, OP_ST_UI8 ): PUSH_BOOL(POP_UI8 () == POP_UI8 ()); break;
+            case P(OP_TE, OP_ST_UI16): PUSH_BOOL(POP_UI16() == POP_UI16()); break;
+            case P(OP_TE, OP_ST_UI32): PUSH_BOOL(POP_UI32() == POP_UI32()); break;
+            case P(OP_TE, OP_ST_UI64): PUSH_BOOL(POP_UI64() == POP_UI64()); break;
+            case P(OP_TE, OP_ST_F   ): PUSH_BOOL(POP_F   () == POP_F   ()); break;
+            case P(OP_TE, OP_ST_D   ): PUSH_BOOL(POP_D   () == POP_D   ()); break;
+/*- TGE ----------------------------------------------------------------*/
+            case P(OP_TGE, OP_ST_SI8 ): PUSH_BOOL(POP_SI8 () >= POP_SI8 ()); break;
+            case P(OP_TGE, OP_ST_SI16): PUSH_BOOL(POP_SI16() >= POP_SI16()); break;
+            case P(OP_TGE, OP_ST_SI32): PUSH_BOOL(POP_SI32() >= POP_SI32()); break;
+            case P(OP_TGE, OP_ST_SI64): PUSH_BOOL(POP_SI64() >= POP_SI64()); break;
+            case P(OP_TGE, OP_ST_UI8 ): PUSH_BOOL(POP_UI8 () >= POP_UI8 ()); break;
+            case P(OP_TGE, OP_ST_UI16): PUSH_BOOL(POP_UI16() >= POP_UI16()); break;
+            case P(OP_TGE, OP_ST_UI32): PUSH_BOOL(POP_UI32() >= POP_UI32()); break;
+            case P(OP_TGE, OP_ST_UI64): PUSH_BOOL(POP_UI64() >= POP_UI64()); break;
+            case P(OP_TGE, OP_ST_F   ): PUSH_BOOL(POP_F   () >= POP_F   ()); break;
+            case P(OP_TGE, OP_ST_D   ): PUSH_BOOL(POP_D   () >= POP_D   ()); break;
+/*- TG -----------------------------------------------------------------*/
+            case P(OP_TG, OP_ST_SI8 ): PUSH_BOOL(POP_SI8 () > POP_SI8 ()); break;
+            case P(OP_TG, OP_ST_SI16): PUSH_BOOL(POP_SI16() > POP_SI16()); break;
+            case P(OP_TG, OP_ST_SI32): PUSH_BOOL(POP_SI32() > POP_SI32()); break;
+            case P(OP_TG, OP_ST_SI64): PUSH_BOOL(POP_SI64() > POP_SI64()); break;
+            case P(OP_TG, OP_ST_UI8 ): PUSH_BOOL(POP_UI8 () > POP_UI8 ()); break;
+            case P(OP_TG, OP_ST_UI16): PUSH_BOOL(POP_UI16() > POP_UI16()); break;
+            case P(OP_TG, OP_ST_UI32): PUSH_BOOL(POP_UI32() > POP_UI32()); break;
+            case P(OP_TG, OP_ST_UI64): PUSH_BOOL(POP_UI64() > POP_UI64()); break;
+            case P(OP_TG, OP_ST_F   ): PUSH_BOOL(POP_F   () > POP_F   ()); break;
+            case P(OP_TG, OP_ST_D   ): PUSH_BOOL(POP_D   () > POP_D   ()); break;
         }
     }
 }

@@ -147,7 +147,7 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
     c->next_local_symbol_offset = 0;
 
     /* function body */
-    compile_statement_list(c, statement->u.define_function.first_statement);
+    compile_statement_list(c, statement->u.define_function.block);
 
     /* fill in the frame size now that we know about the local variables */
     bytestream_set32(&c->out->bytestream, frame_size_loc, c->next_local_symbol_offset);
@@ -158,9 +158,9 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
 /*----------------------------------------------------------------------*/
 static void compile_return(compile_state_t *c, ast_statement_t *statement) {
     /* return value? */
-    if (statement->u.return_statement.return_value_expression) {
+    if (statement->u.return_.expr) {
         /* return value expression */
-        compile_expression(c, statement->u.return_statement.return_value_expression);
+        compile_expression(c, statement->u.return_.expr);
 
         /* move return value to just above the top of frame and parameters */
         {
@@ -183,14 +183,14 @@ static void compile_if(compile_state_t *c, ast_statement_t *statement) {
     uint32_t addr;
 
     /* if test */
-    compile_expression(c, statement->u.if_statement.condition);
+    compile_expression(c, statement->u.if_.condition);
     /* jump past if-block if predicate is false (filled in below) */
     bcbuild_JF(&c->out->bytestream, 0, &past_if_address_loc); /* dest address calculated below */
 
     /* compile if-block */
-    compile_statement_list(c, statement->u.if_statement.if_block);
+    compile_statement_list(c, statement->u.if_.if_block);
 
-    if (statement->u.if_statement.else_block != NULL) {
+    if (statement->u.if_.else_block != NULL) {
         /* jump from end of if-block past else-block (filled in below) */
         bcbuild_J(&c->out->bytestream, 0, &past_else_address_loc);
     }
@@ -199,9 +199,9 @@ static void compile_if(compile_state_t *c, ast_statement_t *statement) {
     addr = bytestream_loc(&c->out->bytestream);
     bytestream_set32(&c->out->bytestream, past_if_address_loc, addr);
 
-    if (statement->u.if_statement.else_block != NULL) {
+    if (statement->u.if_.else_block != NULL) {
         /* compile else-block */
-        compile_statement_list(c, statement->u.if_statement.else_block);
+        compile_statement_list(c, statement->u.if_.else_block);
         /* fill in past-else address */
         addr = bytestream_loc(&c->out->bytestream);
         bytestream_set32(&c->out->bytestream, past_else_address_loc, addr);
@@ -215,17 +215,17 @@ static void compile_for(compile_state_t *c, ast_statement_t *statement) {
     uint32_t bottom_addr;
 
     /* initialize */
-    compile_statement_list(c, statement->u.for_statement.initialize);
+    compile_statement_list(c, statement->u.for_.initialize);
 
 /* top: */
     top_addr = bytestream_loc(&c->out->bytestream);
 
     /* if condition is false, jump to bottom */
-    compile_expression(c, statement->u.for_statement.condition);
+    compile_expression(c, statement->u.for_.condition);
     bcbuild_JF(&c->out->bytestream, 0, &bottom_loc); /* filled in below */
 
     /* increment */
-    compile_statement_list(c, statement->u.for_statement.increment);
+    compile_statement_list(c, statement->u.for_.increment);
 
     /* jump to top */
     bcbuild_J(&c->out->bytestream, top_addr, NULL);
@@ -274,13 +274,11 @@ static void compile_bin_op(compile_state_t *c, ast_expression_t *expression) {
         case TK_MINUS:          bcbuild_SUB(&c->out->bytestream, subtype); break;
         case TK_STAR:           bcbuild_MUL(&c->out->bytestream, subtype); break;
         case TK_SLASH:          bcbuild_DIV(&c->out->bytestream, subtype); break;
-        /* TODO:jkd
-        case TK_LESS+:           bcbuild_TL (&c->out->bytestream, subtype); break;
+        case TK_LESS:           bcbuild_TL (&c->out->bytestream, subtype); break;
         case TK_LESS_EQUAL:     bcbuild_TLE(&c->out->bytestream, subtype); break;
-        case TK_EQUALS:         bcbuild_TE (&c->out->bytestream, subtype); break;
+        case TK_EQUALS_EQUALS:  bcbuild_TE (&c->out->bytestream, subtype); break;
         case TK_GREATER_EQUAL:  bcbuild_TGE(&c->out->bytestream, subtype); break;
         case TK_GREATER:        bcbuild_TG (&c->out->bytestream, subtype); break;
-        */
         default: INTERNAL_ERROR(c);
     }
 }

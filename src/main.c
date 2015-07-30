@@ -78,9 +78,7 @@ int main(int argc, char **argv) {
         disasm(compile_out.bytestream.start, size);
     }
 
-/*
-    printf("linear allocator used %ld bytes\n", allocator.used);
-*/
+    printf("\nlinear allocator used %ld bytes\n", allocator.used);
 
     /* run vm */
     {

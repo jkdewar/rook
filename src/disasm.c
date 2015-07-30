@@ -36,42 +36,24 @@ void disasm(uint8_t *bytecode, size_t size) {
                     case OP_ST_D   : printf("%f"   , inst->u.push_d   .value); break;
                 }
                 break;
-            case OP_ADD:
-                printf("ADD.");
-                print_subtype(inst->subtype);
-                break;
-            case OP_SUB:
-                printf("SUB.");
-                print_subtype(inst->subtype);
-                break;
-            case OP_MUL:
-                printf("MUL.");
-                print_subtype(inst->subtype);
-                break;
-            case OP_DIV:
-                printf("DIV.");
-                print_subtype(inst->subtype);
-                break;
-            case OP_RET:
-                printf("RET");
-                break;
-            case OP_FRAME:
-                printf("FRAME %d", inst->u.frame.size);
-                break;
-            case OP_STORE:
-                printf("STORE %d %d", inst->u.store.size, inst->u.store.stack_pos);
-                break;
-            case OP_J:
-                printf("J %d", inst->u.j.address);
-                break;
-            case OP_JF:
-                printf("JF %d", inst->u.jf.address);
-                break;
-            case OP_JT:
-                printf("JT %d", inst->u.jt.address);
-                break;
+            case OP_ADD: printf("ADD."); print_subtype(inst->subtype); break;
+            case OP_SUB: printf("SUB."); print_subtype(inst->subtype); break;
+            case OP_MUL: printf("MUL."); print_subtype(inst->subtype); break;
+            case OP_DIV: printf("DIV."); print_subtype(inst->subtype); break;
+            case OP_TL:  printf("TL."); print_subtype(inst->subtype); break;
+            case OP_TLE: printf("TLE."); print_subtype(inst->subtype); break;
+            case OP_TE:  printf("TE."); print_subtype(inst->subtype); break;
+            case OP_TGE: printf("TGE."); print_subtype(inst->subtype); break;
+            case OP_TG:  printf("TG."); print_subtype(inst->subtype); break;
+            case OP_RET: printf("RET"); break;
+            case OP_FRAME: printf("FRAME %d", inst->u.frame.size); break;
+            case OP_STORE: printf("STORE %d %d", inst->u.store.size, inst->u.store.stack_pos); break;
+            case OP_J:  printf("J %d", inst->u.j.address); break;
+            case OP_JF: printf("JF %d", inst->u.jf.address); break;
+            case OP_JT: printf("JT %d", inst->u.jt.address); break;
+
             default:
-                printf("OP_??? (%02X)", inst->opcode);
+                printf("OP_??? (0x%02X)", inst->opcode);
                 break;
         }
         printf("\n");

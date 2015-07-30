@@ -173,7 +173,7 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
     statement->next = NULL;
     statement->type = AST_STATEMENT_DEFINE_FUNCTION;
     statement->u.define_function.first_parameter = NULL;
-    statement->u.define_function.first_statement = NULL;
+    statement->u.define_function.block = NULL;
     statement->u.define_function.return_type_token.type =
             TK_FUNCTION; /* TODO:jkd hacky way to specify no return type */
 
@@ -241,7 +241,7 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
     }
 
     /* function body statement list */
-    statement->u.define_function.first_statement = parse_statement_list(p);
+    statement->u.define_function.block = parse_statement_list(p);
 
     /* end */
     token = next_token(p);
@@ -266,10 +266,10 @@ static ast_statement_t *parse_return(parse_state_t *p) {
     token = peek_token(p);
     if (test_token(token, TK_END)) {
         /* no return value */
-        statement->u.return_statement.return_value_expression = NULL;
+        statement->u.return_.expr = NULL;
     } else {
         /* return value */
-        statement->u.return_statement.return_value_expression = parse_logical_expression(p);
+        statement->u.return_.expr = parse_logical_expression(p);
     }
     return statement;
 }
@@ -288,17 +288,17 @@ static ast_statement_t *parse_if(parse_state_t *p) {
     statement->type = AST_STATEMENT_IF;
 
     /* if predicate / block */
-    statement->u.if_statement.condition = parse_logical_expression(p);
-    statement->u.if_statement.if_block = parse_statement_list(p);
+    statement->u.if_.condition = parse_logical_expression(p);
+    statement->u.if_.if_block = parse_statement_list(p);
 
     /* else? */
     token = peek_token(p);
     if (test_token(token, TK_ELSE)) {
         next_token(p);
         /* else block */
-        statement->u.if_statement.else_block = parse_statement_list(p);
+        statement->u.if_.else_block = parse_statement_list(p);
     } else {
-        statement->u.if_statement.else_block = NULL;
+        statement->u.if_.else_block = NULL;
     }
 
     /* end */
@@ -317,16 +317,16 @@ static ast_statement_t *parse_for(parse_state_t *p) {
     statement_for = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
     statement_for->next = NULL;
     statement_for->type = AST_STATEMENT_FOR;
-    statement_for->u.for_statement.initialize = NULL;
-    statement_for->u.for_statement.condition = NULL;
-    statement_for->u.for_statement.increment = NULL;
+    statement_for->u.for_.initialize = NULL;
+    statement_for->u.for_.condition = NULL;
+    statement_for->u.for_.increment = NULL;
 
     /* for */
     token = next_token(p);
     EXPECT(token, TK_FOR, "'for' expected");
 
     /* init statements */
-    next_statement = &statement_for->u.for_statement.initialize;
+    next_statement = &statement_for->u.for_.initialize;
     for (;;) {
         token = peek_token(p);
         if (test_token(token, TK_SEMICOLON)) {
@@ -356,8 +356,8 @@ static ast_statement_t *parse_for(parse_state_t *p) {
     if (test_token(token, TK_SEMICOLON)) {
         next_token(p);
     } else {
-        statement_for->u.for_statement.condition = parse_logical_expression(p);
-        if (statement_for->u.for_statement.condition == NULL) {
+        statement_for->u.for_.condition = parse_logical_expression(p);
+        if (statement_for->u.for_.condition == NULL) {
             error(p, "conditional expression expected");
         }
         token = peek_token(p);
@@ -366,7 +366,7 @@ static ast_statement_t *parse_for(parse_state_t *p) {
     }
 
     /* increment statements */
-    next_statement = &statement_for->u.for_statement.increment;
+    next_statement = &statement_for->u.for_.increment;
     for (;;) {
         token = peek_token(p);
         if (test_token(token, TK_DO)) {
@@ -392,7 +392,7 @@ static ast_statement_t *parse_for(parse_state_t *p) {
     }
 
     /* block */
-    statement_for->u.for_statement.block = parse_statement_list(p);
+    statement_for->u.for_.block = parse_statement_list(p);
 
     /* end */
     token = next_token(p);

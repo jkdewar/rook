@@ -5,7 +5,8 @@ typedef enum {
     AST_STATEMENT_DEFINE_FUNCTION,
     AST_STATEMENT_RETURN,
     AST_STATEMENT_IF,
-    AST_STATEMENT_FOR
+    AST_STATEMENT_FOR,
+    AST_STATEMENT_ASSIGN
 } ast_statement_type_t;
 
 typedef struct {
@@ -22,11 +23,11 @@ typedef struct {
     token_t name_token;
     ast_function_parameter_t *first_parameter;
     token_t return_type_token;
-    struct ast_statement_t *first_statement;
+    struct ast_statement_t *block;
 } ast_statement_define_function_t;
 
 typedef struct {
-    struct ast_expression_t *return_value_expression;
+    struct ast_expression_t *expr;
 } ast_statement_return_t;
 
 typedef struct {
@@ -42,12 +43,18 @@ typedef struct {
     struct ast_statement_t *block;
 } ast_statement_for_t;
 
+typedef struct {
+        token_t identifier;
+        struct ast_expression_t *expr;
+} ast_statement_assign_t;
+
 typedef union {
     ast_statement_declare_variable_t declare_variable;
     ast_statement_define_function_t define_function;
-    ast_statement_return_t return_statement;
-    ast_statement_if_t if_statement;
-    ast_statement_for_t for_statement;
+    ast_statement_return_t return_;
+    ast_statement_if_t if_;
+    ast_statement_for_t for_;
+    ast_statement_assign_t assign;
 } ast_statement_union_t;
 
 typedef struct ast_statement_t {
