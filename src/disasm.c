@@ -15,6 +15,7 @@ void disasm(uint8_t *bytecode, size_t size) {
     instruction_t *inst;
     size_t ip = 0;
     while (ip < size) {
+        printf("%04ld: ", ip);
         inst = (instruction_t *) &bytecode[ip];
         ip += sizeof(instruction_t);
         switch (inst->opcode) {

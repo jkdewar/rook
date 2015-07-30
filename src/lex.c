@@ -44,7 +44,7 @@ void lex(lex_input_t *in, lex_output_t *out) {
     l->out->token_count = 0;
     l->out->is_error = 0;
     l->out->error_string[0] = '\0';
-    
+
     if (setjmp(l->jmpbuf)) {
         return;
     }
@@ -122,7 +122,7 @@ static void error(lex_state_t *l) {
         p += 1;
     }
     line_end = line_start;
-    while (*line_end != '\0' && 
+    while (*line_end != '\0' &&
            *line_end != '\n') {
         line_end += 1;
     }
@@ -142,7 +142,7 @@ static void error(lex_state_t *l) {
 
 /*----------------------------------------------------------------------*/
 static int next_token(lex_state_t *l) {
-    token_t *token; 
+    token_t *token;
     char c;
     char cn;
     token = &l->out->tokens[l->out->token_count];
@@ -201,7 +201,7 @@ static int next_token(lex_state_t *l) {
     } else {
         error(l);
     }
-    return 1;    
+    return 1;
 }
 
 /*----------------------------------------------------------------------*/
@@ -210,7 +210,7 @@ static int is_whitespace(char c) {
         case ' ':
         case '\t':
         case '\r':
-        case '\n': 
+        case '\n':
             return 1;
         default:
             break;
@@ -220,7 +220,7 @@ static int is_whitespace(char c) {
 
 /*----------------------------------------------------------------------*/
 static int is_decimal_digit(char c) {
-    return c >= '0' && c <= '9'; 
+    return c >= '0' && c <= '9';
 }
 
 /*----------------------------------------------------------------------*/
@@ -247,11 +247,11 @@ static void skip_whitespace(lex_state_t *l) {
 
 /*----------------------------------------------------------------------*/
 static void skip_comment(lex_state_t *l) {
-    while (*(l->ptr + 0) == '/' && 
+    while (*(l->ptr + 0) == '/' &&
            *(l->ptr + 1) == '/') {
         l->ptr += 2;
-        while (*l->ptr != '\0' && 
-               *l->ptr != '\r' && 
+        while (*l->ptr != '\0' &&
+               *l->ptr != '\r' &&
                *l->ptr != '\n') {
             l->ptr += 1;
         }
@@ -276,6 +276,7 @@ static int match_keyword(token_t *token) {
         { "var", TK_VAR },
         { "func", TK_FUNCTION },
         { "if", TK_IF },
+        { "else", TK_ELSE },
         { "for", TK_FOR },
         { "return", TK_RETURN },
         { "and", TK_AND },
@@ -300,7 +301,7 @@ static void read_identifier(lex_state_t *l, token_t *token) {
     const char *start;
     const char *end;
     size_t len;
-    
+
     /* find the end of the identifier */
     start = l->ptr;
     end = l->ptr;
@@ -309,7 +310,7 @@ static void read_identifier(lex_state_t *l, token_t *token) {
             break;
         end += 1;
     }
-    
+
     /* copy identifier string to the token */
     len = end - start;
     token->type = TK_IDENTIFIER;
@@ -331,7 +332,7 @@ static void read_number(lex_state_t *l, token_t *token) {
     i = 0;
     while (is_decimal_digit(*l->ptr)) {
         digit = (*l->ptr - '0');
-        i *= 10; 
+        i *= 10;
         i += digit;
         ++l->ptr;
     }
@@ -368,7 +369,7 @@ static void read_string(lex_state_t *l, token_t *token) {
     const char *start;
     const char *end;
     size_t len;
-    
+
     /* opening quote */
     if (*l->ptr != '\"') {
         error(l);
@@ -385,7 +386,7 @@ static void read_string(lex_state_t *l, token_t *token) {
         error(l);
     }
     l->ptr = end + 1;
-    
+
     /* copy string to the token */
     len = end - start;
     token->type = TK_STRING_LITERAL;

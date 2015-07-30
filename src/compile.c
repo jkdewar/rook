@@ -165,7 +165,8 @@ static void compile_return_statement(compile_state_t *c, ast_statement_t *statem
             int32_t frameJunkSize = sizeof(int) * 3; /* sp, bp, return address */
             int32_t returnTypeSize = sizeof(int32_t); /* TODO:jkd */
             int32_t totalSizeOfParameters = 0; /* TODO:jkd */
-            bcbuild_STORE(&c->out->bytestream, returnTypeSize, - returnTypeSize - frameJunkSize - totalSizeOfParameters);
+            bcbuild_STORE(&c->out->bytestream, returnTypeSize,
+                    - returnTypeSize - frameJunkSize - totalSizeOfParameters);
         }
     }
 
@@ -175,28 +176,34 @@ static void compile_return_statement(compile_state_t *c, ast_statement_t *statem
 
 /*----------------------------------------------------------------------*/
 static void compile_if_statement(compile_state_t *c, ast_statement_t *statement) {
-    uint32_t address_loc;
-    uint32_t past_if_block_addr;
+    uint32_t past_if_address_loc;
+    uint32_t past_else_address_loc;
+    uint32_t addr;
 
     /* if test */
     compile_expression(c, statement->u.if_statement.if_predicate);
-
-/* TODO:jkd
-    Type ifExpressionType = ifStatement->ifExpression->GetType();
-    if (ifExpressionType != Type_Bool)
-    {
-        ERROR("bool expression expected");
-    }
-*/
     /* jump past if-block if predicate is false (filled in below) */
-    bcbuild_JF(&c->out->bytestream, 0, &address_loc); /* dest address calculated below */
+    bcbuild_JF(&c->out->bytestream, 0, &past_if_address_loc); /* dest address calculated below */
 
     /* compile if-block */
     compile_statement_list(c, statement->u.if_statement.if_block);
 
-    /* fill in address */
-    past_if_block_addr = bytestream_loc(&c->out->bytestream);
-    bytestream_set32(&c->out->bytestream, address_loc, past_if_block_addr);
+    if (statement->u.if_statement.else_block != NULL) {
+        /* jump from end of if-block past else-block (filled in below) */
+        bcbuild_J(&c->out->bytestream, 0, &past_else_address_loc);
+    }
+
+    /* fill in past-if address */
+    addr = bytestream_loc(&c->out->bytestream);
+    bytestream_set32(&c->out->bytestream, past_if_address_loc, addr);
+
+    if (statement->u.if_statement.else_block != NULL) {
+        /* compile else-block */
+        compile_statement_list(c, statement->u.if_statement.else_block);
+        /* fill in past-else address */
+        addr = bytestream_loc(&c->out->bytestream);
+        bytestream_set32(&c->out->bytestream, past_else_address_loc, addr);
+    }
 }
 
 /*----------------------------------------------------------------------*/
@@ -239,7 +246,7 @@ static void compile_bin_op(compile_state_t *c, ast_expression_t *expression) {
         case TK_STAR:           bcbuild_MUL(&c->out->bytestream, subtype); break;
         case TK_SLASH:          bcbuild_DIV(&c->out->bytestream, subtype); break;
         /* TODO:jkd
-        case TK_LESS:           bcbuild_TL (&c->out->bytestream, subtype); break;
+        case TK_LESS+:           bcbuild_TL (&c->out->bytestream, subtype); break;
         case TK_LESS_EQUAL:     bcbuild_TLE(&c->out->bytestream, subtype); break;
         case TK_EQUALS:         bcbuild_TE (&c->out->bytestream, subtype); break;
         case TK_GREATER_EQUAL:  bcbuild_TGE(&c->out->bytestream, subtype); break;

@@ -119,7 +119,8 @@ static ast_statement_t *parse_statement(parse_state_t *p) {
     token = peek_token(p);
     if (token == NULL) {
         return NULL;
-    } else if (test_token(token, TK_END)) {
+    } else if (test_token(token, TK_ELSE) ||
+               test_token(token, TK_END)) {
         return NULL;
     } else if (test_token(token, TK_VAR)) {
         return parse_declare_var(p);
@@ -283,13 +284,19 @@ static ast_statement_t *parse_if_statement(parse_state_t *p) {
     statement->next = NULL;
     statement->type = AST_STATEMENT_IF;
 
-    /* if predicate */
+    /* if predicate / block */
     statement->u.if_statement.if_predicate = parse_logical_expression(p);
-
-    /* if block */
     statement->u.if_statement.if_block = parse_statement_list(p);
 
-    /* TODO:jkd elseif, else */
+    /* else? */
+    token = peek_token(p);
+    if (test_token(token, TK_ELSE)) {
+        next_token(p);
+        /* else block */
+        statement->u.if_statement.else_block = parse_statement_list(p);
+    } else {
+        statement->u.if_statement.else_block = NULL;
+    }
 
     /* end */
     token = next_token(p);

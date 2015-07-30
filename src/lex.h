@@ -29,6 +29,7 @@ typedef enum {
     TK_VAR,
     TK_FUNCTION,
     TK_IF,
+    TK_ELSE,
     TK_FOR,
     TK_RETURN,
     TK_AND,

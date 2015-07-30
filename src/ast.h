@@ -31,6 +31,7 @@ typedef struct {
 typedef struct {
     struct ast_expression_t *if_predicate;
     struct ast_statement_t *if_block;
+    struct ast_statement_t *else_block;
 } ast_statement_if_t;
 
 typedef union {
