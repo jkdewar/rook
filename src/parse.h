@@ -1,6 +1,6 @@
 #pragma once
 #include "lex.h"
-#include "allocator.h"
+#include "allocator/allocator.h"
 
 typedef struct {
     lex_output_t *lex_out;

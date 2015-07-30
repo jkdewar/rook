@@ -1,5 +1,5 @@
 #pragma once
-#include "allocator.h"
+#include "allocator/allocator.h"
 #include <stdlib.h>
 
 typedef enum {
@@ -30,7 +30,9 @@ typedef enum {
     TK_FUNCTION,
     TK_IF,
     TK_FOR,
-    TK_RETURN
+    TK_RETURN,
+    TK_AND,
+    TK_OR
 } token_type_t;
 
 typedef union {

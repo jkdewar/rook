@@ -4,7 +4,7 @@
 
 #define PUSH_OP(OP) bytestream_push8(bs, (uint8_t)(OP))
 #define PUSH_ST(ST) bytestream_push8(bs, (uint8_t)(ST))
-#define PUSH_8(X) bytestream_push8(bs, X)
+#define PUSH_8 (X) bytestream_push8 (bs, X)
 #define PUSH_16(X) bytestream_push16(bs, X)
 #define PUSH_32(X) bytestream_push32(bs, X)
 #define PUSH_64(X) bytestream_push64(bs, X)

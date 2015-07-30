@@ -26,6 +26,9 @@ static ast_statement_t *parse_declare_var(parse_state_t *p);
 static ast_statement_t *parse_define_function(parse_state_t *p);
 static ast_statement_t *parse_return_statement(parse_state_t *p);
 static ast_expression_t *parse_logical_expression(parse_state_t *p);
+static ast_expression_t *parse_logical_op(parse_state_t *p, ast_expression_t *left);
+static ast_expression_t *parse_compare_term(parse_state_t *p);
+static ast_expression_t *parse_compare_op(parse_state_t *p, ast_expression_t *left);
 static ast_expression_t *parse_expression(parse_state_t *p);
 static ast_expression_t *parse_sum_op(parse_state_t *p, ast_expression_t *left);
 static ast_expression_t *parse_signed_term(parse_state_t *p);
@@ -266,8 +269,82 @@ static ast_statement_t *parse_return_statement(parse_state_t *p) {
 
 /*----------------------------------------------------------------------*/
 static ast_expression_t *parse_logical_expression(parse_state_t *p) {
-    /* TODO:jkd */
-    return parse_expression(p);
+    ast_expression_t *left;
+    ast_expression_t *logical_op;
+
+    left = parse_compare_term(p);
+    logical_op = parse_logical_op(p, left);
+    return logical_op != NULL ? logical_op : left;
+}
+
+/*----------------------------------------------------------------------*/
+static ast_expression_t *parse_logical_op(parse_state_t *p, ast_expression_t *left) {
+    token_t* token;
+
+    token = peek_token(p);
+    if (token == NULL) {
+        return NULL;
+    } else if (token->type == TK_AND || token->type == TK_OR) {
+        ast_expression_t *right;
+        ast_expression_t *bin_op;
+        ast_expression_t *logical_op;
+
+        next_token(p);
+        right = parse_compare_term(p);
+
+        bin_op = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+        bin_op->type = AST_EXPRESSION_BIN_OP;
+        bin_op->u.bin_op.left = left;
+        bin_op->u.bin_op.right = right;
+        bin_op->u.bin_op.operation = token->type;
+
+        logical_op = parse_logical_op(p, bin_op);
+        return logical_op != NULL ? logical_op : bin_op;
+    } else {
+        return NULL;
+    }
+}
+
+/*----------------------------------------------------------------------*/
+static ast_expression_t *parse_compare_term(parse_state_t *p) {
+    ast_expression_t *left;
+    ast_expression_t *compare_op;
+
+    left = parse_expression(p);
+    compare_op = parse_compare_op(p, left);
+    return compare_op != NULL ? compare_op : left;
+}
+
+/*----------------------------------------------------------------------*/
+static ast_expression_t *parse_compare_op(parse_state_t *p, ast_expression_t *left) {
+    token_t* token;
+
+    token = peek_token(p);
+    if (token == NULL) {
+        return NULL;
+    } else if (token->type == TK_LESS ||
+               token->type == TK_LESS_EQUAL ||
+               token->type == TK_EQUALS ||
+               token->type == TK_GREATER_EQUAL ||
+               token->type == TK_GREATER) {
+        ast_expression_t *right;
+        ast_expression_t *bin_op;
+        ast_expression_t *compare_op;
+
+        next_token(p);
+        right = parse_expression(p);
+
+        bin_op = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+        bin_op->type = AST_EXPRESSION_BIN_OP;
+        bin_op->u.bin_op.left = left;
+        bin_op->u.bin_op.right = right;
+        bin_op->u.bin_op.operation = token->type;
+
+        compare_op = parse_compare_op(p, bin_op);
+        return compare_op != NULL ? compare_op : bin_op;
+    } else {
+        return NULL;
+    }
 }
 
 /*----------------------------------------------------------------------*/
@@ -394,7 +471,7 @@ static ast_expression_t *parse_value(parse_state_t *p) {
         expression->type = AST_EXPRESSION_LITERAL;
         expression->u.literal.token = *token; /* TODO:jkd copy string literal? */
     } else {
-        error(p, "");
+        error(p, "value expected");
     }
     return expression;
     /* TODO:jkd */

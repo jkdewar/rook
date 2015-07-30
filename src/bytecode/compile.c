@@ -208,10 +208,17 @@ static void compile_bin_op(compile_state_t *c, ast_expression_t *expression) {
     compile_expression(c, expression->u.bin_op.left);
 
     switch (operation) {
-        case TK_PLUS: bcbuild_ADD(&c->out->bytestream, subtype); break;
-        case TK_MINUS:bcbuild_SUB(&c->out->bytestream, subtype); break;
-        case TK_STAR: bcbuild_MUL(&c->out->bytestream, subtype); break;
-        case TK_SLASH:bcbuild_DIV(&c->out->bytestream, subtype); break;
+        case TK_PLUS:           bcbuild_ADD(&c->out->bytestream, subtype); break;
+        case TK_MINUS:          bcbuild_SUB(&c->out->bytestream, subtype); break;
+        case TK_STAR:           bcbuild_MUL(&c->out->bytestream, subtype); break;
+        case TK_SLASH:          bcbuild_DIV(&c->out->bytestream, subtype); break;
+        /* TODO:jkd
+        case TK_LESS:           bcbuild_TL (&c->out->bytestream, subtype); break;
+        case TK_LESS_EQUAL:     bcbuild_TLE(&c->out->bytestream, subtype); break;
+        case TK_EQUALS:         bcbuild_TE (&c->out->bytestream, subtype); break;
+        case TK_GREATER_EQUAL:  bcbuild_TGE(&c->out->bytestream, subtype); break;
+        case TK_GREATER:        bcbuild_TG (&c->out->bytestream, subtype); break;
+        */
         default: INTERNAL_ERROR(c);
     }
 }

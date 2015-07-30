@@ -277,7 +277,9 @@ static int match_keyword(token_t *token) {
         { "func", TK_FUNCTION },
         { "if", TK_IF },
         { "for", TK_FOR },
-        { "return", TK_RETURN }
+        { "return", TK_RETURN },
+        { "and", TK_AND },
+        { "or", TK_OR }
     };
     static size_t keyword_count = sizeof(keywords) / sizeof(keywords[0]);
     size_t i;

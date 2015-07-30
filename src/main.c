@@ -1,18 +1,16 @@
 #include "filesys.h"
 #include "lex.h"
 #include "parse.h"
-#include "compile.h"
-#include "disasm.h"
-#include "vm.h"
+#include "bytecode/compile.h"
+#include "bytecode/disasm.h"
+#include "bytecode/vm.h"
+#include "bytecode/stack.h"
 #include "ast.h"
 #include "allocator/linear_allocator.h"
 #include "allocator/std_heap_allocator.h"
 #include "allocator/general_allocator.h"
 #include <stdio.h>
 #include <stdlib.h>
-
-int32_t stack_pop_si32(vm_t *vm);
-void stack_push_ui32(vm_t *vm, uint32_t value);
 
 /*----------------------------------------------------------------------*/
 int main(int argc, char **argv) {
