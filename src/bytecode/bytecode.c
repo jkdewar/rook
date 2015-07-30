@@ -10,8 +10,34 @@
 #define PUSH_64(X) bytestream_push64(bs, X)
 
 /*----------------------------------------------------------------------*/
+void bcbuild_STORE(bytestream_t *bs, uint32_t size, int32_t stack_pos) {
+    instruction_t i;
+    memset(&i, 0xff, sizeof(instruction_t));
+    i.opcode = OP_STORE;
+    i.u.store.size = size;
+    i.u.store.stack_pos = stack_pos;
+    bytestream_pushn(bs, &i, sizeof(instruction_t));
+}
+
+/*----------------------------------------------------------------------*/
+void bcbuild_FRAME(bytestream_t *bs, uint32_t size, uint32_t *size_loc) {
+    instruction_t i;
+    memset(&i, 0xff, sizeof(instruction_t));
+    i.opcode = OP_FRAME;
+    i.u.frame.size = size;
+    if (size_loc != NULL)
+        *size_loc = bytestream_loc(bs);
+    bytestream_pushn(bs, &i, sizeof(instruction_t));
+    if (size_loc != NULL)
+        *size_loc += (uint32_t)((uint8_t*)&i.u.frame.size - (uint8_t*)&i);
+}
+
+/*----------------------------------------------------------------------*/
 void bcbuild_RET(bytestream_t *bs) {
-    PUSH_OP(OP_RET);
+    instruction_t i;
+    memset(&i, 0xff, sizeof(instruction_t));
+    i.opcode = OP_RET;
+    bytestream_pushn(bs, &i, sizeof(instruction_t));
 }
 
 /*----------------------------------------------------------------------*/

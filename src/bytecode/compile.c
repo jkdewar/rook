@@ -21,6 +21,7 @@ typedef struct {
     jmp_buf jmpbuf; /* used for error handling */
     compile_context_t context;
     symbol_table_t local_symbol_table;
+    uint32_t next_local_symbol_offset;
 } compile_state_t;
 
 static void error(compile_state_t *c, const char *msg);
@@ -107,20 +108,46 @@ static void compile_declare_variable(compile_state_t *c, ast_statement_t *statem
     entry->name = statement->u.declare_variable.token.u.s; /* TODO:jkd copy? */
     entry->next = NULL;
     symbol_table_insert(&c->local_symbol_table, entry);
+    c->next_local_symbol_offset += sizeof(int32_t); /* TODO:jkd */
 }
 
 /*----------------------------------------------------------------------*/
 static void compile_define_function(compile_state_t *c, ast_statement_t *statement) {
-    if (c->context != COMPILE_CONTEXT_GLOBAL) {
+    uint32_t frame_size_loc;
+
+    if (c->context != COMPILE_CONTEXT_GLOBAL)
         error(c, "local function definitions are not allowed");
-    }
     c->context = COMPILE_CONTEXT_FUNCTION_BODY;
+
+    bcbuild_FRAME(&c->out->bytestream, 0, &frame_size_loc);
 
     /* clear local symbol table */
     symbol_table_clear(&c->local_symbol_table, c->out->bytestream.allocator);
 
+    /* Put function parameters into the symbol table.
+     * They have negative locations, because they are stored above bp. */
+    {
+        uint32_t frame_junk_size = sizeof(uint32_t) * 3; /* sp, bp, return address */
+        uint32_t parameter_location = -frame_junk_size;
+        ast_function_parameter_t *param;
+        symbol_table_entry_t *entry;
+        for (param = statement->u.define_function.first_parameter; param != NULL; param = param->next) {
+            parameter_location -= sizeof(int32_t); /* size of parameter TODO:jkd */
+            entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
+            entry->name = param->identifier_token.u.s; /* TODO:jkd copy? */
+            entry->type.tag = TTAG_BASIC;       /* TODO:jkd */
+            entry->type.u.basic_type = T_INT32;
+            /* TODO:jkd entry->location = parameter_location; */
+            symbol_table_insert(&c->local_symbol_table, entry);
+        }
+    }
+    c->next_local_symbol_offset = 0;
+
     /* function body */
     compile_statement_list(c, statement->u.define_function.first_statement);
+
+    /* fill in the frame size now that we know about the local variables */
+    bytestream_set32(&c->out->bytestream, frame_size_loc, c->next_local_symbol_offset);
 
     c->context = COMPILE_CONTEXT_GLOBAL;
 }
@@ -130,7 +157,16 @@ static void compile_return_statement(compile_state_t *c, ast_statement_t *statem
 
     /* return value? */
     if (statement->u.return_statement.return_value_expression) {
+        /* return value expression */
         compile_expression(c, statement->u.return_statement.return_value_expression);
+
+        /* move return value to just above the top of frame and parameters */
+        {
+            int32_t frameJunkSize = sizeof(int) * 3; /* sp, bp, return address */
+            int32_t returnTypeSize = sizeof(int32_t); /* TODO:jkd */
+            int32_t totalSizeOfParameters = 0; /* TODO:jkd */
+            bcbuild_STORE(&c->out->bytestream, returnTypeSize, - returnTypeSize - frameJunkSize - totalSizeOfParameters);
+        }
     }
 
     /* return */

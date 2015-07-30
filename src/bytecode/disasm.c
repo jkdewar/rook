@@ -54,6 +54,12 @@ void disasm(uint8_t *bytecode, size_t size) {
             case OP_RET:
                 printf("RET");
                 break;
+            case OP_FRAME:
+                printf("FRAME %d", inst->u.frame.size);
+                break;
+            case OP_STORE:
+                printf("STORE %d %d", inst->u.store.size, inst->u.store.stack_pos);
+                break;
             default:
                 printf("OP_??? (%02X)", inst->opcode);
                 break;

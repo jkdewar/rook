@@ -11,12 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*----------------------------------------------------------------------*/
-/* TODO:jkd */
-static int32_t stack_pop_si32(vm_t *vm) {
-    vm->sp -= sizeof(int32_t);
-    return *((int32_t *)&vm->stack[vm->sp]);
-}
+int32_t stack_pop_si32(vm_t *vm);
+void stack_push_ui32(vm_t *vm, uint32_t value);
 
 /*----------------------------------------------------------------------*/
 int main(int argc, char **argv) {
@@ -70,7 +66,7 @@ int main(int argc, char **argv) {
         uint8_t *ptr = compile_out.bytestream.start;
 
         for (i = 0; i < num_bytes; ++i) {
-            if (( i % 8) == 0) {
+            if (( i % 16) == 0) {
                 printf("\n%04lx: ", i);
             }
             printf("%02X ", ptr[i]);
@@ -96,6 +92,11 @@ int main(int argc, char **argv) {
         vm.bytecode = compile_out.bytestream.start;
         vm.bytecode_size = compile_out.bytestream.ptr - compile_out.bytestream.start;
         vm.stack = ALLOCATOR_ALLOC(&allocator, 1024 * 16);
+        vm.ip = 0;
+        vm.sp = 0;
+        stack_push_ui32(&vm, 0); /* return value */
+        stack_push_ui32(&vm, ~0); /* return address */
+        vm.bp = vm.sp;
         vm_run(&vm);
 
         result = stack_pop_si32(&vm);
