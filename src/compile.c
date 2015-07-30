@@ -44,6 +44,7 @@ void compile(compile_input_t *in, compile_output_t *out) {
     c->in = in;
     c->out = out;
     c->out->error = 0;
+    c->out->bytestream.allocator = c->in->allocator;
     bytestream_init(&c->out->bytestream, 1024 * 16);
     c->context = COMPILE_CONTEXT_GLOBAL;
     symbol_table_init(&c->local_symbol_table);

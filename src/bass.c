@@ -63,11 +63,12 @@ int bass_do_file(bass_state_t *B, const char *file_name) {
             goto fail;
         }
     }
+
     /* compile */
     {
         compile_input_t compile_input;
+        compile_input.allocator = &B->allocator;
         compile_input.parse_out = &parse_output;
-        compile_output.bytestream.allocator = &B->allocator;
         compile(&compile_input, &compile_output);
         if (compile_output.error) {
             B->error = compile_output.error;

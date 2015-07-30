@@ -4,6 +4,7 @@
 #include "allocator/allocator.h"
 
 typedef struct {
+    allocator_t *allocator;
     parse_output_t *parse_out;
 } compile_input_t;
 
