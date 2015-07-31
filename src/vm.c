@@ -42,7 +42,7 @@ void vm_run(vm_t *vm) {
             break;
         inst = (instruction_t *) &vm->bytecode[vm->ip];
         vm->ip += sizeof(instruction_t);
-#define P(OP, ST) ((OP) + ((ST) << 8))
+#define P(OP, ST) ((uint16_t)(OP) | ((uint16_t)(ST) << 8))
         switch P(inst->opcode, inst->subtype) {
 /*- STORE --------------------------------------------------------------*/
             case P(OP_STORE, 0xFF): {
@@ -52,8 +52,8 @@ void vm_run(vm_t *vm) {
             }
 /*- LOAD ---------------------------------------------------------------*/
             case P(OP_LOAD, 0xFF): {
-                uint8_t *src = vm->stack + vm->bp + inst->u.store.stack_pos;
-                stack_push_n(vm, src, inst->u.store.size);
+                uint8_t *src = vm->stack + vm->bp + inst->u.load.stack_pos;
+                stack_push_n(vm, src, inst->u.load.size);
                 break;
             }
 /*- ADD ----------------------------------------------------------------*/
@@ -133,7 +133,6 @@ void vm_run(vm_t *vm) {
             }
 /*- RET ----------------------------------------------------------------*/
             case P(OP_RET, 0xFF): {
-                /*  TODO:jkd move return value above the frame */
                 vm->sp = vm->bp;
                 vm->bp = POP_UI32();
                 vm->sp = POP_UI32();

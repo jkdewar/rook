@@ -1,10 +1,12 @@
 #pragma once
 #include "types.h"
 #include "allocator/allocator.h"
+#include <stdint.h>
 
 typedef struct symbol_table_entry_t {
     const char *name;
     type_t type;
+    int32_t stack_pos;
     struct symbol_table_entry_t *next;
 } symbol_table_entry_t;
 

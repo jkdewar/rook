@@ -103,17 +103,25 @@ static void compile_statement(compile_state_t *c, ast_statement_t *statement) {
 
 /*----------------------------------------------------------------------*/
 static void compile_declare_variable(compile_state_t *c, ast_statement_t *statement) {
+    const char *name;
     symbol_table_entry_t *entry;
 
     if (c->context != COMPILE_CONTEXT_FUNCTION_BODY) {
         error(c, "variable defined outside of function body");
     }
 
+    name = statement->u.declare_variable.token.u.s;
+
+    /* check for duplicate symbols */
+    entry = symbol_table_find(&c->local_symbol_table, name);
+    if (entry != NULL)
+        error(c, "duplicate symbol");
+
     /* add variable to local symbol table */
-    /* TODO:jkd check for duplicate symbols */
     entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
-    entry->name = statement->u.declare_variable.token.u.s; /* TODO:jkd copy? */
+    entry->name = name; /* TODO:jkd copy? */
     entry->next = NULL;
+    entry->stack_pos = c->next_local_symbol_offset;
     symbol_table_insert(&c->local_symbol_table, entry);
     c->next_local_symbol_offset += sizeof(int32_t); /* TODO:jkd */
 }
@@ -170,9 +178,8 @@ static void compile_return(compile_state_t *c, ast_statement_t *statement) {
         {
             int32_t frameJunkSize = sizeof(int) * 3; /* sp, bp, return address */
             int32_t returnTypeSize = sizeof(int32_t); /* TODO:jkd */
-            int32_t totalSizeOfParameters = 0; /* TODO:jkd */
             bcbuild_STORE(&c->out->bytestream, returnTypeSize,
-                    - returnTypeSize - frameJunkSize - totalSizeOfParameters);
+                    - returnTypeSize - frameJunkSize);
         }
     }
 
@@ -228,6 +235,9 @@ static void compile_for(compile_state_t *c, ast_statement_t *statement) {
     compile_expression(c, statement->u.for_.condition);
     bcbuild_JF(&c->out->bytestream, 0, &bottom_loc); /* filled in below */
 
+    /* body */
+    compile_statement_list(c, statement->u.for_.block);
+
     /* increment */
     compile_statement_list(c, statement->u.for_.increment);
 
@@ -241,17 +251,22 @@ static void compile_for(compile_state_t *c, ast_statement_t *statement) {
 
 /*----------------------------------------------------------------------*/
 static void compile_assignment(compile_state_t *c, ast_statement_t *statement) {
+    const char *name;
     uint32_t size;
-    int32_t stack_pos;
+    symbol_table_entry_t *entry;
 
     /* evaluate rvalue */
     compile_expression(c, statement->u.assignment.expr);
 
+    /* look up symbol */
+    name = statement->u.assignment.identifier.u.s;
+    entry = symbol_table_find(&c->local_symbol_table, name);
+    if (entry == NULL)
+        error(c, "undeclared identifier");
     size = sizeof(int32_t); /* TODO:jkd */
-    stack_pos = 0; /* TODO:jkd */
 
     /* store in lvalue */
-    bcbuild_STORE(&c->out->bytestream, size, stack_pos);
+    bcbuild_STORE(&c->out->bytestream, size, entry->stack_pos);
 }
 
 /*----------------------------------------------------------------------*/
@@ -281,17 +296,16 @@ static void compile_literal(compile_state_t *c, ast_expression_t *expression) {
 
 /*----------------------------------------------------------------------*/
 static void compile_variable(compile_state_t *c, ast_expression_t *expression) {
+    const char *name;
     symbol_table_entry_t *entry;
     uint32_t size;
-    int32_t stack_pos;
 
-    entry = symbol_table_find(&c->local_symbol_table,
-                              expression->u.variable.token.u.s);
+    name = expression->u.variable.token.u.s;
+    entry = symbol_table_find(&c->local_symbol_table, name);
     if (entry == NULL)
         error(c, "undeclared identifier");
     size = sizeof(int32_t); /* TODO:jkd */
-    stack_pos = 0; /* TODO:jkd */
-    bcbuild_LOAD(&c->out->bytestream, size, stack_pos);
+    bcbuild_LOAD(&c->out->bytestream, size, entry->stack_pos);
 }
 
 /*----------------------------------------------------------------------*/

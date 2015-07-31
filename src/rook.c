@@ -84,7 +84,7 @@ int rook_do_file(rook_state_t *R, const char *file_name) {
 
         for (i = 0; i < num_bytes; ++i) {
             if (( i % 16) == 0) {
-                printf("\n%04lx: ", i);
+                printf("\n%04ld: ", i);
             }
             printf("%02X ", ptr[i]);
         }
