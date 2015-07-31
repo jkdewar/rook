@@ -1,4 +1,4 @@
-#include "bass.h"
+#include "rook.h"
 #include "filesys.h"
 #include "lex.h"
 #include "parse.h"
@@ -8,27 +8,27 @@
 #include "stack.h"
 #include <stdio.h>
 
-struct bass_state_t {
+struct rook_state_t {
     allocator_t allocator;
     int error;
     char error_str[1024];
 };
 
 /*----------------------------------------------------------------------*/
-bass_state_t *bass_open(allocator_t allocator) {
-    bass_state_t *B = ALLOCATOR_ALLOC(&allocator, sizeof(bass_state_t));
-    B->allocator = allocator;
-    B->error = 0;
-    B->error_str[0] = '\0';
-    return B;
+rook_state_t *rook_open(allocator_t allocator) {
+    rook_state_t *R = ALLOCATOR_ALLOC(&allocator, sizeof(rook_state_t));
+    R->allocator = allocator;
+    R->error = 0;
+    R->error_str[0] = '\0';
+    return R;
 }
 
 /*----------------------------------------------------------------------*/
-void bass_close(bass_state_t *B) {
+void rook_close(rook_state_t *R) {
 }
 
 /*----------------------------------------------------------------------*/
-int bass_do_file(bass_state_t *B, const char *file_name) {
+int rook_do_file(rook_state_t *R, const char *file_name) {
     char *source;
     lex_output_t lex_output;
     parse_output_t parse_output;
@@ -36,7 +36,7 @@ int bass_do_file(bass_state_t *B, const char *file_name) {
 
     /* read source code from file */
     if (!read_text_file(file_name, &source)) {
-        B->error = 1;
+        R->error = 1;
         goto fail;
     }
 
@@ -44,10 +44,10 @@ int bass_do_file(bass_state_t *B, const char *file_name) {
     {
         lex_input_t lex_input;
         lex_input.s = source;
-        lex_input.allocator = &B->allocator;
+        lex_input.allocator = &R->allocator;
         lex(&lex_input, &lex_output);
         if (lex_output.error) {
-            B->error = lex_output.error;
+            R->error = lex_output.error;
             goto fail;
         }
     }
@@ -56,10 +56,10 @@ int bass_do_file(bass_state_t *B, const char *file_name) {
     {
         parse_input_t parse_input;
         parse_input.lex_out = &lex_output;
-        parse_input.allocator = &B->allocator;
+        parse_input.allocator = &R->allocator;
         parse(&parse_input, &parse_output);
         if (parse_output.error) {
-            B->error = parse_output.error;
+            R->error = parse_output.error;
             goto fail;
         }
     }
@@ -67,11 +67,11 @@ int bass_do_file(bass_state_t *B, const char *file_name) {
     /* compile */
     {
         compile_input_t compile_input;
-        compile_input.allocator = &B->allocator;
+        compile_input.allocator = &R->allocator;
         compile_input.parse_out = &parse_output;
         compile(&compile_input, &compile_output);
         if (compile_output.error) {
-            B->error = compile_output.error;
+            R->error = compile_output.error;
             goto fail;
         }
     }
@@ -100,28 +100,32 @@ int bass_do_file(bass_state_t *B, const char *file_name) {
     /* run */
     {
         vm_t vm;
-        vm.stack = ALLOCATOR_ALLOC(&B->allocator, 1024 * 16);
+        vm.bytecode = compile_output.bytestream.start;
+        vm.bytecode_size = compile_output.bytestream.ptr - compile_output.bytestream.start;
+        vm.stack = ALLOCATOR_ALLOC(&R->allocator, 1024 * 16);
         vm.ip = 0;
         vm.sp = 0;
         stack_push_ui32(&vm, 0);  /* return value */
         stack_push_ui32(&vm, ~0); /* return address */
         vm.bp = vm.sp;
         vm_run(&vm);
+
+        printf("result: %d\n", stack_pop_si32(&vm));
     }
 
-    B->error = 0;
-    return B->error;
+    R->error = 0;
+    return R->error;
 
 fail:
-    return B->error;
+    return R->error;
 }
 
 /*----------------------------------------------------------------------*/
-int bass_get_error(bass_state_t *B) {
-    return B->error;
+int rook_get_error(rook_state_t *R) {
+    return R->error;
 }
 
 /*----------------------------------------------------------------------*/
-const char *bass_get_error_str(bass_state_t *B) {
-    return B->error_str;
+const char *rook_get_error_str(rook_state_t *R) {
+    return R->error_str;
 }

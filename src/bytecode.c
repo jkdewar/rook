@@ -3,7 +3,6 @@
 #include <string.h>
 
 #define INST(OP) instruction_t i;  memset(&i, 0xff, sizeof(instruction_t)); i.opcode = OP
-#define SUBTYPE(ST) i.subtype = ST
 #define PUSH() bytestream_pushn(bs, &i, sizeof(instruction_t));
 
 
@@ -12,6 +11,14 @@ void bcbuild_STORE(bytestream_t *bs, uint32_t size, int32_t stack_pos) {
     INST(OP_STORE);
     i.u.store.size = size;
     i.u.store.stack_pos = stack_pos;
+    PUSH();
+}
+
+/*----------------------------------------------------------------------*/
+void bcbuild_LOAD(bytestream_t *bs, uint32_t size, int32_t stack_pos) {
+    INST(OP_LOAD);
+    i.u.load.size = size;
+    i.u.load.stack_pos = stack_pos;
     PUSH();
 }
 

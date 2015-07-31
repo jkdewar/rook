@@ -32,8 +32,10 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
 static void compile_return(compile_state_t *c, ast_statement_t *statement);
 static void compile_if(compile_state_t *c, ast_statement_t *statement);
 static void compile_for(compile_state_t *c, ast_statement_t *statement);
+static void compile_assignment(compile_state_t *c, ast_statement_t *statement);
 static void compile_expression(compile_state_t *c, ast_expression_t *expression);
 static void compile_literal(compile_state_t *c, ast_expression_t *expression);
+static void compile_variable(compile_state_t *c, ast_expression_t *expression);
 static void compile_bin_op(compile_state_t *c, ast_expression_t *expression);
 
 /*----------------------------------------------------------------------*/
@@ -94,6 +96,7 @@ static void compile_statement(compile_state_t *c, ast_statement_t *statement) {
         case AST_STATEMENT_RETURN: compile_return(c, statement); break;
         case AST_STATEMENT_IF: compile_if(c, statement); break;
         case AST_STATEMENT_FOR: compile_for(c, statement); break;
+        case AST_STATEMENT_ASSIGNMENT: compile_assignment(c, statement); break;
         default: INTERNAL_ERROR(c);
     }
 }
@@ -237,9 +240,25 @@ static void compile_for(compile_state_t *c, ast_statement_t *statement) {
 }
 
 /*----------------------------------------------------------------------*/
+static void compile_assignment(compile_state_t *c, ast_statement_t *statement) {
+    uint32_t size;
+    int32_t stack_pos;
+
+    /* evaluate rvalue */
+    compile_expression(c, statement->u.assignment.expr);
+
+    size = sizeof(int32_t); /* TODO:jkd */
+    stack_pos = 0; /* TODO:jkd */
+
+    /* store in lvalue */
+    bcbuild_STORE(&c->out->bytestream, size, stack_pos);
+}
+
+/*----------------------------------------------------------------------*/
 static void compile_expression(compile_state_t *c, ast_expression_t *expression) {
     switch (expression->type) {
         case AST_EXPRESSION_LITERAL: compile_literal(c, expression); break;
+        case AST_EXPRESSION_VARIABLE: compile_variable(c, expression); break;
         case AST_EXPRESSION_BIN_OP: compile_bin_op(c, expression); break;
         default: INTERNAL_ERROR(c);
     }
@@ -258,6 +277,21 @@ static void compile_literal(compile_state_t *c, ast_expression_t *expression) {
         */
         default: INTERNAL_ERROR(c);
     }
+}
+
+/*----------------------------------------------------------------------*/
+static void compile_variable(compile_state_t *c, ast_expression_t *expression) {
+    symbol_table_entry_t *entry;
+    uint32_t size;
+    int32_t stack_pos;
+
+    entry = symbol_table_find(&c->local_symbol_table,
+                              expression->u.variable.token.u.s);
+    if (entry == NULL)
+        error(c, "undeclared identifier");
+    size = sizeof(int32_t); /* TODO:jkd */
+    stack_pos = 0; /* TODO:jkd */
+    bcbuild_LOAD(&c->out->bytestream, size, stack_pos);
 }
 
 /*----------------------------------------------------------------------*/

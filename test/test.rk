@@ -1,0 +1,5 @@
+func main():int
+    var x
+    x = 42 + 99
+    return x
+end

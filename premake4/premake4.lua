@@ -1,11 +1,11 @@
 local folder = _OS
 
-solution "basic"
+solution "rook"
   configurations { "Debug", "Release" }
   location(folder)
   targetdir(folder.."/bin")
 
-  project "basic"
+  project "rook"
     kind "ConsoleApp"
     language "C"
 

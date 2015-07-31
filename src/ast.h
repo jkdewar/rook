@@ -6,7 +6,7 @@ typedef enum {
     AST_STATEMENT_RETURN,
     AST_STATEMENT_IF,
     AST_STATEMENT_FOR,
-    AST_STATEMENT_ASSIGN
+    AST_STATEMENT_ASSIGNMENT
 } ast_statement_type_t;
 
 typedef struct {
@@ -46,7 +46,7 @@ typedef struct {
 typedef struct {
         token_t identifier;
         struct ast_expression_t *expr;
-} ast_statement_assign_t;
+} ast_statement_assignment_t;
 
 typedef union {
     ast_statement_declare_variable_t declare_variable;
@@ -54,7 +54,7 @@ typedef union {
     ast_statement_return_t return_;
     ast_statement_if_t if_;
     ast_statement_for_t for_;
-    ast_statement_assign_t assign;
+    ast_statement_assignment_t assignment;
 } ast_statement_union_t;
 
 typedef struct ast_statement_t {
@@ -65,12 +65,17 @@ typedef struct ast_statement_t {
 
 typedef enum {
     AST_EXPRESSION_LITERAL,
+    AST_EXPRESSION_VARIABLE,
     AST_EXPRESSION_BIN_OP
 } ast_expression_type_t;
 
 typedef struct {
     token_t token;
 } ast_expression_literal_t;
+
+typedef struct {
+    token_t token;
+} ast_expression_variable_t;
 
 typedef struct {
     struct ast_expression_t *left;
@@ -80,6 +85,7 @@ typedef struct {
 
 typedef union {
     ast_expression_literal_t literal;
+    ast_expression_variable_t variable;
     ast_expression_bin_op_t bin_op;
 } ast_expression_union_t;
 

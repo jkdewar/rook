@@ -2,6 +2,7 @@
 #include "bytecode.h"
 #include "stack.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define PUSH_BOOL(X) stack_push_ui8 (vm, X)
@@ -213,6 +214,9 @@ void vm_run(vm_t *vm) {
             case P(OP_TG, OP_ST_UI64): PUSH_BOOL(POP_UI64() > POP_UI64()); break;
             case P(OP_TG, OP_ST_F   ): PUSH_BOOL(POP_F   () > POP_F   ()); break;
             case P(OP_TG, OP_ST_D   ): PUSH_BOOL(POP_D   () > POP_D   ()); break;
+
+            default: printf("unhandled opcode 0x%02X\n", inst->opcode); abort();
+
         }
     }
 }

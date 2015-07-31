@@ -27,6 +27,7 @@ static ast_statement_t *parse_define_function(parse_state_t *p);
 static ast_statement_t *parse_return(parse_state_t *p);
 static ast_statement_t *parse_if(parse_state_t *p);
 static ast_statement_t *parse_for(parse_state_t *p);
+static ast_statement_t *parse_assignment(parse_state_t *p);
 static ast_expression_t *parse_logical_expression(parse_state_t *p);
 static ast_expression_t *parse_logical_op(parse_state_t *p, ast_expression_t *left);
 static ast_expression_t *parse_compare_term(parse_state_t *p);
@@ -133,6 +134,8 @@ static ast_statement_t *parse_statement(parse_state_t *p) {
         return parse_if(p);
     } else if (test_token(token, TK_FOR)) {
         return parse_for(p);
+    } else if (test_token(token, TK_IDENTIFIER)) { /* TODO:jkd this won't parse (a) = 4, for example */
+        return parse_assignment(p);
     }
     next_token(p);
     error(p, "statement expected");
@@ -147,7 +150,7 @@ static ast_statement_t *parse_declare_var(parse_state_t *p) {
     ast_statement_t *statement;
 
     statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
-    statement->next = NULL;
+    memset(statement, 0, sizeof(ast_statement_t));
     statement->type = AST_STATEMENT_DECLARE_VARIABLE;
 
     /* var */
@@ -170,7 +173,7 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
     ast_function_parameter_t *prev_parameter = NULL;
 
     statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
-    statement->next = NULL;
+    memset(statement, 0, sizeof(ast_statement_t));
     statement->type = AST_STATEMENT_DEFINE_FUNCTION;
     statement->u.define_function.first_parameter = NULL;
     statement->u.define_function.block = NULL;
@@ -256,6 +259,7 @@ static ast_statement_t *parse_return(parse_state_t *p) {
     ast_statement_t *statement;
 
     statement = ALLOC(sizeof(ast_statement_t));
+    memset(statement, 0, sizeof(ast_statement_t));
     statement->type = AST_STATEMENT_RETURN;
 
     /* return keyword */
@@ -284,7 +288,7 @@ static ast_statement_t *parse_if(parse_state_t *p) {
     EXPECT(token, TK_IF, "'if' expected");
 
     statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
-    statement->next = NULL;
+    memset(statement, 0, sizeof(ast_statement_t));
     statement->type = AST_STATEMENT_IF;
 
     /* if predicate / block */
@@ -315,7 +319,7 @@ static ast_statement_t *parse_for(parse_state_t *p) {
     ast_statement_t **next_statement;
 
     statement_for = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
-    statement_for->next = NULL;
+    memset(statement_for, 0, sizeof(ast_statement_t));
     statement_for->type = AST_STATEMENT_FOR;
     statement_for->u.for_.initialize = NULL;
     statement_for->u.for_.condition = NULL;
@@ -399,6 +403,32 @@ static ast_statement_t *parse_for(parse_state_t *p) {
     EXPECT(token, TK_END, "'end' expected");
 
     return statement_for;
+}
+
+/*----------------------------------------------------------------------*/
+static ast_statement_t *parse_assignment(parse_state_t *p) {
+    token_t *token;
+    ast_statement_t *statement;
+
+    statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
+    memset(statement, 0, sizeof(ast_statement_t));
+    statement->type = AST_STATEMENT_ASSIGNMENT;
+
+    /* identifier (lvalue) */
+    token = next_token(p);
+    EXPECT(token, TK_IDENTIFIER, "identifier expected");
+    statement->u.assignment.identifier = *token; /* TODO:jkd copy? */
+
+    /* equals */
+    token = next_token(p);
+    EXPECT(token, TK_EQUALS, "'=' expected");
+
+    /* expression (rvalue) */
+    statement->u.assignment.expr = parse_logical_expression(p);
+    if (statement->u.assignment.expr == NULL)
+        error(p, "rvalue expected");
+
+    return statement;
 }
 
 /*----------------------------------------------------------------------*/
@@ -604,6 +634,9 @@ static ast_expression_t *parse_value(parse_state_t *p) {
                token->type == TK_STRING_LITERAL) {
         expression->type = AST_EXPRESSION_LITERAL;
         expression->u.literal.token = *token; /* TODO:jkd copy string literal? */
+    } else if (token->type == TK_IDENTIFIER) {
+        expression->type = AST_EXPRESSION_VARIABLE;
+        expression->u.variable.token = *token; /* TODO:jkd copy? */
     } else {
         error(p, "value expected");
     }
