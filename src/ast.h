@@ -66,6 +66,7 @@ typedef struct ast_statement_t {
 typedef enum {
     AST_EXPRESSION_LITERAL,
     AST_EXPRESSION_VARIABLE,
+    AST_EXPRESSION_FUNCTION_CALL,
     AST_EXPRESSION_BIN_OP
 } ast_expression_type_t;
 
@@ -78,6 +79,11 @@ typedef struct {
 } ast_expression_variable_t;
 
 typedef struct {
+    token_t identifier;
+    struct ast_expression_list_t *expr_list;
+} ast_expression_function_call_t;
+
+typedef struct {
     struct ast_expression_t *left;
     struct ast_expression_t *right;
     token_type_t operation;
@@ -86,6 +92,7 @@ typedef struct {
 typedef union {
     ast_expression_literal_t literal;
     ast_expression_variable_t variable;
+    ast_expression_function_call_t function_call;
     ast_expression_bin_op_t bin_op;
 } ast_expression_union_t;
 
@@ -93,3 +100,8 @@ typedef struct ast_expression_t {
     ast_expression_type_t type;
     ast_expression_union_t u;
 } ast_expression_t;
+
+typedef struct ast_expression_list_t {
+    ast_expression_t *expr;
+    struct ast_expression_list_t *next;
+} ast_expression_list_t;

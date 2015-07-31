@@ -3,19 +3,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void test();
+
 /*----------------------------------------------------------------------*/
 int main(int argc, char **argv) {
-    uint8_t memory[1024*1024];
+#if 0
+    uint8_t memory[1024 * 1024];
     allocator_t allocator = make_linear_allocator(memory, sizeof(memory)/sizeof(memory[0]));
+    char *file_name;
     rook_state_t *R;
 
-    /* read source file */
     if (argc != 2) {
         printf("usage: rook <file.rook>\n");
         return -1;
     }
-
+    file_name = argv[1];
     R = rook_open(allocator);
-    rook_do_file(R, argv[1]);
+    rook_do_file(R, file_name);
     rook_close(R);
+    return 0;
+#else
+    test();
+    return 0;
+#endif
 }

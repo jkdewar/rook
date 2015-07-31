@@ -40,6 +40,9 @@ static ast_expression_t *parse_term_op(parse_state_t *p, ast_expression_t *left)
 static ast_expression_t *parse_signed_factor(parse_state_t *p);
 static ast_expression_t *parse_argument(parse_state_t *p);
 static ast_expression_t *parse_value(parse_state_t *p);
+static ast_expression_t *parse_literal(parse_state_t *p);
+static ast_expression_t *parse_variable(parse_state_t *p);
+static ast_expression_t *parse_function_call(parse_state_t *p);
 
 /*----------------------------------------------------------------------*/
 void parse(parse_input_t *parse_in, parse_output_t *parse_out) {
@@ -134,14 +137,12 @@ static ast_statement_t *parse_statement(parse_state_t *p) {
         return parse_if(p);
     } else if (test_token(token, TK_FOR)) {
         return parse_for(p);
-    } else if (test_token(token, TK_IDENTIFIER)) { /* TODO:jkd this won't parse (a) = 4, for example */
+    } else if (test_token(token, TK_IDENTIFIER)) {
         return parse_assignment(p);
     }
     next_token(p);
     error(p, "statement expected");
-    /* unreachable */
-    assert(0);
-    return NULL;
+    return NULL; /* unreachable */
 }
 
 /*----------------------------------------------------------------------*/
@@ -623,23 +624,103 @@ static ast_expression_t *parse_argument(parse_state_t *p) {
 
 /*----------------------------------------------------------------------*/
 static ast_expression_t *parse_value(parse_state_t *p) {
-    token_t *token = next_token(p);
-    ast_expression_t *expression =
-            (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+    token_t *token = peek_token(p);
 
     if (token == NULL) {
     } else if (token->type == TK_INT_LITERAL ||
                token->type == TK_FLOAT_LITERAL ||
                token->type == TK_DOUBLE_LITERAL ||
                token->type == TK_STRING_LITERAL) {
-        expression->type = AST_EXPRESSION_LITERAL;
-        expression->u.literal.token = *token; /* TODO:jkd copy string literal? */
+        return parse_literal(p);
     } else if (token->type == TK_IDENTIFIER) {
-        expression->type = AST_EXPRESSION_VARIABLE;
-        expression->u.variable.token = *token; /* TODO:jkd copy? */
-    } else {
-        error(p, "value expected");
+        next_token(p);
+        if (test_token(peek_token(p), TK_LBRACKET)) {
+            rewind_token(p);
+            return parse_function_call(p);
+        } else {
+            rewind_token(p);
+            return parse_variable(p);
+        }
     }
+    error(p, "value expected");
+    return NULL; /* unreachable */
+}
+
+/*----------------------------------------------------------------------*/
+static ast_expression_t *parse_literal(parse_state_t *p) {
+    token_t *token = next_token(p);
+    ast_expression_t *expression =
+            (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+    expression->type = AST_EXPRESSION_LITERAL;
+    expression->u.literal.token = *token; /* TODO:jkd copy? */
     return expression;
-    /* TODO:jkd */
+}
+
+/*----------------------------------------------------------------------*/
+static ast_expression_t *parse_variable(parse_state_t *p) {
+    token_t *token = next_token(p);
+    ast_expression_t *expression =
+            (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+    expression->type = AST_EXPRESSION_VARIABLE;
+    expression->u.variable.token = *token; /* TODO:jkd copy? */
+    return expression;
+}
+
+/*----------------------------------------------------------------------*/
+static ast_expression_t *parse_function_call(parse_state_t *p) {
+    token_t *token;
+    ast_expression_t *expression;
+    ast_expression_list_t *param, *new_param;
+
+    expression = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+    memset(expression, 0, sizeof(ast_expression_t));
+
+    expression->type = AST_EXPRESSION_FUNCTION_CALL;
+    /* function identifier */
+    token = next_token(p);
+    EXPECT(token, TK_IDENTIFIER, "function name expected");
+    expression->u.function_call.identifier = *token; /* TODO:jkd copy? */
+
+    /* opening bracket */
+    token = next_token(p);
+    EXPECT(token, TK_LBRACKET, "'(' expected");
+
+    /* parameter list */
+    param = NULL;
+    for (;;) {
+        token = peek_token(p);
+        if (test_token(token, TK_RBRACKET))
+            break;
+
+        /* parameter */
+        new_param = malloc(sizeof(ast_expression_list_t));
+        new_param->next = NULL;
+        new_param->expr = parse_logical_expression(p);
+        if (new_param->expr == NULL)
+            error(p, "expression expected");
+        if (param == NULL) {
+            expression->u.function_call.expr_list = new_param;
+        } else {
+            param->next = new_param;
+        }
+        param = new_param;
+
+        /* comma? */
+        token = peek_token(p);
+        if (test_token(token, TK_COMMA)) {
+            next_token(p);
+            break;
+        }
+
+        if (test_token(token, TK_RBRACKET))
+            break;
+
+        error(p, "',' or ')' expected");
+    }
+
+    /* closing bracket */
+    token = next_token(p);
+    EXPECT(token, TK_RBRACKET, "')' expected");
+
+    return expression;
 }

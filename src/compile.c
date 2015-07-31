@@ -36,6 +36,7 @@ static void compile_assignment(compile_state_t *c, ast_statement_t *statement);
 static void compile_expression(compile_state_t *c, ast_expression_t *expression);
 static void compile_literal(compile_state_t *c, ast_expression_t *expression);
 static void compile_variable(compile_state_t *c, ast_expression_t *expression);
+static void compile_function_call(compile_state_t *c, ast_expression_t *expression);
 static void compile_bin_op(compile_state_t *c, ast_expression_t *expression);
 
 /*----------------------------------------------------------------------*/
@@ -274,6 +275,7 @@ static void compile_expression(compile_state_t *c, ast_expression_t *expression)
     switch (expression->type) {
         case AST_EXPRESSION_LITERAL: compile_literal(c, expression); break;
         case AST_EXPRESSION_VARIABLE: compile_variable(c, expression); break;
+        case AST_EXPRESSION_FUNCTION_CALL: compile_function_call(c, expression); break;
         case AST_EXPRESSION_BIN_OP: compile_bin_op(c, expression); break;
         default: INTERNAL_ERROR(c);
     }
@@ -306,6 +308,12 @@ static void compile_variable(compile_state_t *c, ast_expression_t *expression) {
         error(c, "undeclared identifier");
     size = sizeof(int32_t); /* TODO:jkd */
     bcbuild_LOAD(&c->out->bytestream, size, entry->stack_pos);
+}
+
+/*----------------------------------------------------------------------*/
+static void compile_function_call(compile_state_t *c, ast_expression_t *expression) {
+    const char *name;
+
 }
 
 /*----------------------------------------------------------------------*/

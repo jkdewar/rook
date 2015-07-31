@@ -13,18 +13,16 @@ solution "rook"
 
     files { "../src/**.h", "../src/**.c" }
     files { "../lib/**.h", "../lib/**.c" }
-    includedirs { "../src/", "../lib/" }
-    
+    includedirs { "../src/" }
+
 --- Mac OS X ---------------------------------------------------------
 
     if _OS == "macosx" then
       files { "../src/**.m" }
       defines { }
       includedirs {
-        "/usr/local/include",
       }
       libdirs {
-        "/usr/local/lib",
       }
       links {
       }
@@ -57,5 +55,3 @@ solution "rook"
     configuration "Release"
       defines { "NDEBUG" }
       flags { "Optimize" }
-
-
