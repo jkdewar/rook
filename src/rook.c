@@ -30,12 +30,13 @@ void rook_close(rook_state_t *R) {
 /*----------------------------------------------------------------------*/
 int rook_do_file(rook_state_t *R, const char *file_name) {
     char *source;
+    size_t source_size;
     lex_output_t lex_output;
     parse_output_t parse_output;
     compile_output_t compile_output;
 
     /* read source code from file */
-    if (!read_text_file(file_name, &source)) {
+    if (!read_file(file_name, &source, &source_size)) {
         R->error = 1;
         goto fail;
     }
@@ -105,9 +106,9 @@ int rook_do_file(rook_state_t *R, const char *file_name) {
         vm.stack = ALLOCATOR_ALLOC(&R->allocator, 1024 * 16);
         vm.ip = 0;
         vm.sp = 0;
+        vm.bp = vm.sp;
         stack_push_ui32(&vm, 0);  /* return value */
         stack_push_ui32(&vm, ~0); /* return address */
-        vm.bp = vm.sp;
         vm_run(&vm);
 
         printf("result: %d\n", stack_pop_si32(&vm));

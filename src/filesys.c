@@ -4,7 +4,7 @@
 #include <string.h>
 
 /*----------------------------------------------------------------------*/
-int read_text_file(const char *file_name, char **contents) {
+int read_file(const char *file_name, char **contents, size_t *size) {
     size_t file_size;
     size_t read_size;
 
@@ -27,12 +27,7 @@ int read_text_file(const char *file_name, char **contents) {
 }
 
 /*----------------------------------------------------------------------*/
-int write_text_file(const char *file_name, const char *contents) {
-    return write_binary_file(file_name, contents, strlen(contents));
-}
-
-/*----------------------------------------------------------------------*/
-int write_binary_file(const char *file_name, const char *contents, size_t size) {
+int write_file(const char *file_name, const char *contents, size_t size) {
     size_t result;
 
     FILE* file = fopen(file_name, "wb");
