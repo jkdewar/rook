@@ -4,11 +4,7 @@
 #include <stdint.h>
 
 typedef struct hash_table_entry_t hash_table_entry_t;
-
-typedef struct {
-    allocator_t *allocator;
-    hash_table_entry_t *first;
-} hash_table_t;
+typedef struct hash_table_t hash_table_t;
 
 hash_table_t *hash_table_create(allocator_t *allocator);
 void hash_table_destroy(hash_table_t *hash_table);
