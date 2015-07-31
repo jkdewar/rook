@@ -1,0 +1,64 @@
+---------------------------------------------------
+
+statement_list  -> statement statement_list
+                -> statement
+                -> NULL
+
+statement       -> var IDENTIFIER [, IDENTIFER ...] TYPE
+                -> IDENTIFIER EQUALS expression
+                -> RETURN expression
+                -> IF logical_expr statementlist END
+
+---------------------------------------------------
+
+logical_expr    -> compare_term logical_op
+
+logical_op      -> AND compare_term logical_op
+                -> OR etc..
+                -> NULL
+                
+logical_term    -> argument logical_op
+
+compare_term    -> expression compare_op
+
+compare_op      -> LANGLE expression compare_op
+                -> RANGLE expression compare_op
+                -> EQUALSEQUALS etc..
+                -> NULL
+
+---------------------------------------------------
+
+expression      -> signed_term sum_op
+
+signed_term     -> PLUS  term
+                -> MINUS term
+                -> term
+                                    
+sum_op          -> PLUS  term sum_op
+                -> MINUS term sum_op
+                -> NULL
+
+term            -> argument term_op
+
+term_op         -> STAR  signed_factor term_op
+                -> SLASH signed_factor term_op
+                -> NULL
+
+signed_factor   -> PLUS  argument
+                -> MINUS argument
+                -> argument
+
+argument        -> literal
+                -> IDENTIFIER
+                -> FUNCTION LBRACKET ??? RBRACKET
+                -> LBRACKET expression RBRACKET
+
+literal         -> INTLITERAL
+                -> FLOATLITERAL
+                -> DOUBLELITERAL
+                -> STRINGLITERAL
+                -> TRUE
+                -> FALSE
+                -> NULL
+
+---------------------------------------------------
