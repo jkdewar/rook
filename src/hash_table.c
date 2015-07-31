@@ -41,9 +41,11 @@ hash_table_t *hash_table_create(allocator_t *allocator) {
     return hash_table;
 }
 
+#include <stdio.h> /* XXX:jkd */
 /*----------------------------------------------------------------------*/
 void hash_table_clear(hash_table_t *hash_table) {
-    assert(0); /* TODO:jkd */
+    /* TODO:jkd*/
+    printf("WARNING: hash_table_clear not implemented\n");
 }
 
 /*----------------------------------------------------------------------*/

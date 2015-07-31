@@ -1,6 +1,6 @@
 #include "compile.h"
 #include "ast.h"
-#include "symbol_table.h"
+#include "hash_table.h"
 #include "bytecode.h"
 #include <stdio.h>
 #include <setjmp.h>
@@ -20,9 +20,15 @@ typedef struct {
     compile_output_t *out;
     jmp_buf jmpbuf; /* used for error handling */
     compile_context_t context;
-    symbol_table_t local_symbol_table;
+    hash_table_t *local_symbol_table;
     uint32_t next_local_symbol_offset;
 } compile_state_t;
+
+typedef struct {
+    const char *name;
+    type_t type;
+    uint32_t stack_pos;
+} symbol_entry_t;
 
 static void error(compile_state_t *c, const char *msg);
 static void compile_statement_list(compile_state_t *c, ast_statement_t *first_statement);
@@ -50,7 +56,7 @@ void compile(compile_input_t *in, compile_output_t *out) {
     c->out->bytestream.allocator = c->in->allocator;
     bytestream_init(&c->out->bytestream, 1024 * 16);
     c->context = COMPILE_CONTEXT_GLOBAL;
-    symbol_table_init(&c->local_symbol_table);
+    c->local_symbol_table = hash_table_create(c->in->allocator);
 
     if (setjmp(c->jmpbuf)) {
         return;
@@ -105,7 +111,7 @@ static void compile_statement(compile_state_t *c, ast_statement_t *statement) {
 /*----------------------------------------------------------------------*/
 static void compile_declare_variable(compile_state_t *c, ast_statement_t *statement) {
     const char *name;
-    symbol_table_entry_t *entry;
+    symbol_entry_t *entry;
 
     if (c->context != COMPILE_CONTEXT_FUNCTION_BODY) {
         error(c, "variable defined outside of function body");
@@ -114,16 +120,15 @@ static void compile_declare_variable(compile_state_t *c, ast_statement_t *statem
     name = statement->u.declare_variable.token.u.s;
 
     /* check for duplicate symbols */
-    entry = symbol_table_find(&c->local_symbol_table, name);
+    entry = hash_table_find(c->local_symbol_table, name);
     if (entry != NULL)
         error(c, "duplicate symbol");
 
     /* add variable to local symbol table */
-    entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
+    entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_entry_t));
     entry->name = name; /* TODO:jkd copy? */
-    entry->next = NULL;
     entry->stack_pos = c->next_local_symbol_offset;
-    symbol_table_insert(&c->local_symbol_table, entry);
+    hash_table_insert(c->local_symbol_table, name, entry);
     c->next_local_symbol_offset += sizeof(int32_t); /* TODO:jkd */
 }
 
@@ -138,7 +143,7 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
     bcbuild_FRAME(&c->out->bytestream, 0, &frame_size_loc); /* frame size filled in below */
 
     /* clear local symbol table */
-    symbol_table_clear(&c->local_symbol_table, c->out->bytestream.allocator);
+    hash_table_clear(c->local_symbol_table);
 
     /* Put function parameters into the symbol table.
      * They have negative locations, because they are stored above bp. */
@@ -146,15 +151,15 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
         uint32_t frame_junk_size = sizeof(uint32_t) * 3; /* sp, bp, return address */
         uint32_t parameter_location = -frame_junk_size;
         ast_function_parameter_t *param;
-        symbol_table_entry_t *entry;
+        symbol_entry_t *entry;
         for (param = statement->u.define_function.first_parameter; param != NULL; param = param->next) {
             parameter_location -= sizeof(int32_t); /* size of parameter TODO:jkd */
-            entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
+            entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_entry_t));
             entry->name = param->identifier_token.u.s; /* TODO:jkd copy? */
             entry->type.tag = TTAG_BASIC;       /* TODO:jkd */
             entry->type.u.basic_type = T_INT32;
             /* TODO:jkd entry->location = parameter_location; */
-            symbol_table_insert(&c->local_symbol_table, entry);
+            hash_table_insert(c->local_symbol_table, entry->name, entry);
         }
     }
     c->next_local_symbol_offset = 0;
@@ -254,14 +259,14 @@ static void compile_for(compile_state_t *c, ast_statement_t *statement) {
 static void compile_assignment(compile_state_t *c, ast_statement_t *statement) {
     const char *name;
     uint32_t size;
-    symbol_table_entry_t *entry;
+    symbol_entry_t *entry;
 
     /* evaluate rvalue */
     compile_expression(c, statement->u.assignment.expr);
 
     /* look up symbol */
     name = statement->u.assignment.identifier.u.s;
-    entry = symbol_table_find(&c->local_symbol_table, name);
+    entry = hash_table_find(c->local_symbol_table, name);
     if (entry == NULL)
         error(c, "undeclared identifier");
     size = sizeof(int32_t); /* TODO:jkd */
@@ -299,11 +304,11 @@ static void compile_literal(compile_state_t *c, ast_expression_t *expression) {
 /*----------------------------------------------------------------------*/
 static void compile_variable(compile_state_t *c, ast_expression_t *expression) {
     const char *name;
-    symbol_table_entry_t *entry;
+    symbol_entry_t *entry;
     uint32_t size;
 
     name = expression->u.variable.token.u.s;
-    entry = symbol_table_find(&c->local_symbol_table, name);
+    entry = hash_table_find(c->local_symbol_table, name);
     if (entry == NULL)
         error(c, "undeclared identifier");
     size = sizeof(int32_t); /* TODO:jkd */
@@ -312,8 +317,7 @@ static void compile_variable(compile_state_t *c, ast_expression_t *expression) {
 
 /*----------------------------------------------------------------------*/
 static void compile_function_call(compile_state_t *c, ast_expression_t *expression) {
-    const char *name;
-
+    INTERNAL_ERROR(c);
 }
 
 /*----------------------------------------------------------------------*/

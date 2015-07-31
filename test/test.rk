@@ -1,8 +1,6 @@
-func fib(n:int):int
-    if n < 2 return 1 end
-    return fib(n - 2) + fib(n - 1)
+func main()
+    var x
+    x = 14
+    return x
 end
 
-func main():int
-    return fib(10)
-end

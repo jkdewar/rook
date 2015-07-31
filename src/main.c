@@ -7,7 +7,6 @@ void test();
 
 /*----------------------------------------------------------------------*/
 int main(int argc, char **argv) {
-#if 0
     uint8_t memory[1024 * 1024];
     allocator_t allocator = make_linear_allocator(memory, sizeof(memory)/sizeof(memory[0]));
     char *file_name;
@@ -22,8 +21,4 @@ int main(int argc, char **argv) {
     rook_do_file(R, file_name);
     rook_close(R);
     return 0;
-#else
-    test();
-    return 0;
-#endif
 }
