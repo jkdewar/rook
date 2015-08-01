@@ -1,4 +1,5 @@
 #pragma once
+#include <stddef.h>
 
 #define MAX_STRUCT_FIELD_LEN 127
 
@@ -16,7 +17,7 @@ typedef enum {
 } basic_type_t;
 
 typedef enum {
-    TTAG_BASIC,
+    TTAG_BASIC_TYPE,
     TTAG_STRUCT,
     TTAG_POINTER
 } type_tag_t;
@@ -34,10 +35,14 @@ typedef union {
 typedef struct type_t {
     type_tag_t tag;
     type_union_t u;
+    size_t size;
 } type_t;
 
 typedef struct struct_field_t {
     char name[MAX_STRUCT_FIELD_LEN + 1];
     struct type_t type;
+    size_t offset;
     struct struct_field_t *next;
 } struct_field_t;
+
+int types_match(type_t *a, type_t *b);

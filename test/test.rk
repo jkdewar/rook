@@ -1,7 +1,4 @@
-func foo(x:int, y:int)
-end
-
-func main()
-    return foo(14, 15)
+func main():int32
+    return 1988.0 + 3.0
 end
 

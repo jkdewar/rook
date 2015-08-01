@@ -151,7 +151,7 @@ static ast_statement_t *parse_declare_var(parse_state_t *p) {
     ast_statement_t *statement;
 
     statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
-    memset(statement, 0, sizeof(ast_statement_t));
+    BZERO(statement);
     statement->tag = AST_STATEMENT_DECLARE_VARIABLE;
 
     /* var */
@@ -173,8 +173,8 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
     ast_function_parameter_t *parameter = NULL;
     ast_function_parameter_t *prev_parameter = NULL;
 
-    statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
-    memset(statement, 0, sizeof(ast_statement_t));
+    statement = ALLOC(sizeof(ast_statement_t));
+    BZERO(statement);
     statement->tag = AST_STATEMENT_DEFINE_FUNCTION;
     statement->u.define_function.first_parameter = NULL;
     statement->u.define_function.block = NULL;
@@ -201,8 +201,7 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
             next_token(p);
 
             prev_parameter = parameter;
-            parameter = (ast_function_parameter_t *)
-                        ALLOC(sizeof(ast_function_parameter_t));
+            parameter = ALLOC(sizeof(ast_function_parameter_t));
             if (prev_parameter == NULL) {
                 statement->u.define_function.first_parameter = parameter;
             } else {
@@ -260,7 +259,7 @@ static ast_statement_t *parse_return(parse_state_t *p) {
     ast_statement_t *statement;
 
     statement = ALLOC(sizeof(ast_statement_t));
-    memset(statement, 0, sizeof(ast_statement_t));
+    BZERO(statement);
     statement->tag = AST_STATEMENT_RETURN;
 
     /* return keyword */
@@ -288,8 +287,8 @@ static ast_statement_t *parse_if(parse_state_t *p) {
     token = next_token(p);
     EXPECT(token, TK_IF, "'if' expected");
 
-    statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
-    memset(statement, 0, sizeof(ast_statement_t));
+    statement = ALLOC(sizeof(ast_statement_t));
+    BZERO(statement);
     statement->tag = AST_STATEMENT_IF;
 
     /* if predicate / block */
@@ -319,8 +318,8 @@ static ast_statement_t *parse_for(parse_state_t *p) {
     ast_statement_t *statement_for;
     ast_statement_t **next_statement;
 
-    statement_for = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
-    memset(statement_for, 0, sizeof(ast_statement_t));
+    statement_for = ALLOC(sizeof(ast_statement_t));
+    BZERO(statement_for);
     statement_for->tag = AST_STATEMENT_FOR;
     statement_for->u.for_.initialize = NULL;
     statement_for->u.for_.condition = NULL;
@@ -411,8 +410,8 @@ static ast_statement_t *parse_assignment(parse_state_t *p) {
     token_t *token;
     ast_statement_t *statement;
 
-    statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
-    memset(statement, 0, sizeof(ast_statement_t));
+    statement = ALLOC(sizeof(ast_statement_t));
+    BZERO(statement);
     statement->tag = AST_STATEMENT_ASSIGNMENT;
 
     /* identifier (lvalue) */
@@ -457,7 +456,8 @@ static ast_expression_t *parse_logical_op(parse_state_t *p, ast_expression_t *le
         next_token(p);
         right = parse_compare_term(p);
 
-        bin_op = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+        bin_op = ALLOC(sizeof(ast_expression_t));
+        BZERO(bin_op);
         bin_op->tag = AST_EXPRESSION_BIN_OP;
         bin_op->u.bin_op.left = left;
         bin_op->u.bin_op.right = right;
@@ -499,7 +499,8 @@ static ast_expression_t *parse_compare_op(parse_state_t *p, ast_expression_t *le
         next_token(p);
         right = parse_expression(p);
 
-        bin_op = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+        bin_op = ALLOC(sizeof(ast_expression_t));
+        BZERO(bin_op);
         bin_op->tag = AST_EXPRESSION_BIN_OP;
         bin_op->u.bin_op.left = left;
         bin_op->u.bin_op.right = right;
@@ -537,7 +538,8 @@ static ast_expression_t *parse_sum_op(parse_state_t *p, ast_expression_t *left) 
         next_token(p);
         right = parse_term(p);
 
-        bin_op = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+        bin_op = ALLOC(sizeof(ast_expression_t));
+        BZERO(bin_op);
         bin_op->tag = AST_EXPRESSION_BIN_OP;
         bin_op->u.bin_op.left = left;
         bin_op->u.bin_op.right = right;
@@ -584,7 +586,7 @@ static ast_expression_t *parse_term_op(parse_state_t *p, ast_expression_t *left)
         next_token(p);
         right = parse_signed_factor(p);
 
-        bin_op = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+        bin_op = ALLOC(sizeof(ast_expression_t));
         bin_op->tag = AST_EXPRESSION_BIN_OP;
         bin_op->u.bin_op.left = left;
         bin_op->u.bin_op.right = right;
@@ -649,8 +651,8 @@ static ast_expression_t *parse_value(parse_state_t *p) {
 /*----------------------------------------------------------------------*/
 static ast_expression_t *parse_literal(parse_state_t *p) {
     token_t *token = next_token(p);
-    ast_expression_t *expression =
-            (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+    ast_expression_t *expression = ALLOC(sizeof(ast_expression_t));
+    BZERO(expression);
     expression->tag = AST_EXPRESSION_LITERAL;
     expression->u.literal.token = *token; /* TODO:jkd copy? */
     return expression;
@@ -659,8 +661,8 @@ static ast_expression_t *parse_literal(parse_state_t *p) {
 /*----------------------------------------------------------------------*/
 static ast_expression_t *parse_variable(parse_state_t *p) {
     token_t *token = next_token(p);
-    ast_expression_t *expression =
-            (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
+    ast_expression_t *expression = ALLOC(sizeof(ast_expression_t));
+    BZERO(expression);
     expression->tag = AST_EXPRESSION_VARIABLE;
     expression->u.variable.token = *token; /* TODO:jkd copy? */
     return expression;
@@ -672,8 +674,8 @@ static ast_expression_t *parse_function_call(parse_state_t *p) {
     ast_expression_t *expression;
     ast_expression_list_t *param, *new_param;
 
-    expression = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
-    memset(expression, 0, sizeof(ast_expression_t));
+    expression = ALLOC(sizeof(ast_expression_t));
+    BZERO(expression);
 
     expression->tag = AST_EXPRESSION_FUNCTION_CALL;
     /* function identifier */
@@ -694,7 +696,7 @@ static ast_expression_t *parse_function_call(parse_state_t *p) {
             break;
 
         /* parameter */
-        new_param = malloc(sizeof(ast_expression_list_t));
+        new_param = ALLOC(sizeof(ast_expression_list_t));
         new_param->next = NULL;
         new_param->expr = parse_logical_expression(p);
         if (new_param->expr == NULL)

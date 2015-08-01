@@ -73,6 +73,8 @@ void bcbuild_J(bytestream_t *bs, uint32_t address, uint32_t *address_where);
 void bcbuild_JT(bytestream_t *bs, uint32_t address, uint32_t *address_where);
 void bcbuild_JF(bytestream_t *bs, uint32_t address, uint32_t *address_where);
 void bcbuild_PUSH_SI32(bytestream_t *bs, int32_t value);
+void bcbuild_PUSH_F(bytestream_t *bs, float value);
+void bcbuild_PUSH_D(bytestream_t *bs, double value);
 void bcbuild_ADD(bytestream_t *bs, opcode_subtype_t st);
 void bcbuild_SUB(bytestream_t *bs, opcode_subtype_t st);
 void bcbuild_MUL(bytestream_t *bs, opcode_subtype_t st);

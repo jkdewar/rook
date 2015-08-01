@@ -5,7 +5,16 @@
 /*----------------------------------------------------------------------*/
 static void print_subtype(opcode_subtype_t subtype) {
     switch (subtype) {
+        case OP_ST_SI8:  printf("SI8");  break;
+        case OP_ST_SI16: printf("SI16"); break;
         case OP_ST_SI32: printf("SI32"); break;
+        case OP_ST_SI64: printf("SI64"); break;
+        case OP_ST_UI8:  printf("UI8");  break;
+        case OP_ST_UI16: printf("UI16"); break;
+        case OP_ST_UI32: printf("UI32"); break;
+        case OP_ST_UI64: printf("UI64"); break;
+        case OP_ST_F:    printf("F");    break;
+        case OP_ST_D:    printf("D");    break;
         default: printf("???"); break;
     }
 }

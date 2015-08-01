@@ -1,4 +1,5 @@
 #pragma once
+#include "types.h"
 
 typedef enum {
     AST_STATEMENT_DECLARE_VARIABLE,
@@ -104,6 +105,7 @@ typedef union {
 struct ast_expression_t {
     ast_expression_tag_t tag;
     ast_expression_union_t u;
+    type_t *type;
 };
 
 struct ast_expression_list_t {

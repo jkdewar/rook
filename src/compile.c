@@ -5,10 +5,12 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <assert.h>
+#include <string.h>
 
 #define STRINGIZE_DETAIL(x) #x
 #define STRINGIZE(x) STRINGIZE_DETAIL(x)
-#define INTERNAL_ERROR(c) error(c, "internal compiler error at " __FILE__ ":" STRINGIZE(__LINE__))
+#define INTERNAL_ERROR() error(c, "internal compiler error at " __FILE__ ":" STRINGIZE(__LINE__))
+#define EXPECT_TYPE(TOKEN, TYPE) if (!token_to_type(c, TOKEN, TYPE)) error(c, "type expected")
 
 typedef enum {
     COMPILE_CONTEXT_GLOBAL,
@@ -23,6 +25,7 @@ typedef struct {
     hash_table_t *local_symbol_table;
     uint32_t next_local_symbol_offset;
     hash_table_t *function_table;
+    hash_table_t *types_table;
 } compile_state_t;
 
 typedef struct {
@@ -33,13 +36,13 @@ typedef struct {
 
 typedef struct function_parameter_t {
     const char *name;
-    type_t type;
+    type_t *type;
     struct function_parameter_t *next;
 } function_parameter_t;
 
 typedef struct {
     const char *name;
-    type_t return_type;
+    type_t *return_type;
     function_parameter_t *first_parameter;
     size_t parameter_count;
 } function_table_entry_t;
@@ -58,6 +61,9 @@ static void compile_literal(compile_state_t *c, ast_expression_t *expression);
 static void compile_variable(compile_state_t *c, ast_expression_t *expression);
 static void compile_function_call(compile_state_t *c, ast_expression_t *expression);
 static void compile_bin_op(compile_state_t *c, ast_expression_t *expression);
+static void build_types_table(hash_table_t *table, allocator_t *allocator);
+static type_t *token_to_type(compile_state_t *c, token_t *token);
+static type_t *str_to_type(compile_state_t *c, const char *str);
 
 /*----------------------------------------------------------------------*/
 void compile(compile_input_t *in, compile_output_t *out) {
@@ -72,6 +78,8 @@ void compile(compile_input_t *in, compile_output_t *out) {
     c->context = COMPILE_CONTEXT_GLOBAL;
     c->local_symbol_table = hash_table_create(c->in->allocator);
     c->function_table = hash_table_create(c->in->allocator);
+    c->types_table = hash_table_create(c->in->allocator);
+    build_types_table(c->types_table, c->in->allocator);
 
     if (setjmp(c->jmpbuf)) {
         return;
@@ -119,7 +127,7 @@ static void compile_statement(compile_state_t *c, ast_statement_t *statement) {
         case AST_STATEMENT_IF: compile_if(c, statement); break;
         case AST_STATEMENT_FOR: compile_for(c, statement); break;
         case AST_STATEMENT_ASSIGNMENT: compile_assignment(c, statement); break;
-        default: INTERNAL_ERROR(c);
+        default: INTERNAL_ERROR();
     }
 }
 
@@ -165,15 +173,14 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
 
         entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(function_table_entry_t));
         entry->name = statement->u.define_function.name_token.u.s; /* TODO:jkd copy? */
-        entry->return_type.tag = TTAG_BASIC;
-        entry->return_type.u.basic_type = T_INT32; /* TODO:jkd */
+        entry->return_type = token_to_type(c, &statement->u.define_function.return_type_token);
         entry->parameter_count = 0;
         prev_param = NULL;
         for (ast_param = statement->u.define_function.first_parameter;
-                ast_param != NULL;  ast_param = ast_param->next) {
+                ast_param != NULL; ast_param = ast_param->next) {
             param = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(function_parameter_t));
-            param->type.tag = TTAG_BASIC;
-            param->type.u.basic_type = T_INT32; /* TODO:jkd */
+            BZERO(param);
+            param->type = token_to_type(c, &ast_param->type_token);
             if (prev_param == NULL) {
                 entry->first_parameter = param;
             } else {
@@ -202,7 +209,7 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
             parameter_location -= sizeof(int32_t); /* size of parameter TODO:jkd */
             entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
             entry->name = param->identifier_token.u.s; /* TODO:jkd copy? */
-            entry->type.tag = TTAG_BASIC;       /* TODO:jkd */
+            entry->type.tag = TTAG_BASIC_TYPE;       /* TODO:jkd */
             entry->type.u.basic_type = T_INT32;
             /* TODO:jkd entry->location = parameter_location; */
             hash_table_insert(c->local_symbol_table, entry->name, entry);
@@ -328,7 +335,7 @@ static void compile_expression(compile_state_t *c, ast_expression_t *expression)
         case AST_EXPRESSION_VARIABLE: compile_variable(c, expression); break;
         case AST_EXPRESSION_FUNCTION_CALL: compile_function_call(c, expression); break;
         case AST_EXPRESSION_BIN_OP: compile_bin_op(c, expression); break;
-        default: INTERNAL_ERROR(c);
+        default: INTERNAL_ERROR();
     }
 }
 
@@ -337,13 +344,20 @@ static void compile_literal(compile_state_t *c, ast_expression_t *expression) {
     switch (expression->u.literal.token.type) {
         case TK_INT_LITERAL:
             bcbuild_PUSH_SI32(&c->out->bytestream, expression->u.literal.token.u.i);
+            expression->type = str_to_type(c, "int32");
+            break;
+        case TK_FLOAT_LITERAL:
+            bcbuild_PUSH_F(&c->out->bytestream, expression->u.literal.token.u.f);
+            expression->type = str_to_type(c, "float");
+            break;
+        case TK_DOUBLE_LITERAL:
+            bcbuild_PUSH_D(&c->out->bytestream, expression->u.literal.token.u.d);
+            expression->type = str_to_type(c, "double");
             break;
         /* TODO:jkd
-        case TK_FLOAT_LITERAL:
-        case TK_DOUBLE_LITERAL:
         case TK_STRING_LITERAL:
         */
-        default: INTERNAL_ERROR(c);
+        default: INTERNAL_ERROR();
     }
 }
 
@@ -370,7 +384,7 @@ static void compile_function_call(compile_state_t *c, ast_expression_t *expressi
 
     /* function name */
     if (expression->u.function_call.identifier.type != TK_IDENTIFIER)
-        INTERNAL_ERROR(c);
+        INTERNAL_ERROR();
     function_name = expression->u.function_call.identifier.u.s;
 
     /* look up function in table */
@@ -389,24 +403,46 @@ static void compile_function_call(compile_state_t *c, ast_expression_t *expressi
          /* compile param */
          compile_expression(c, param_expr->expr);
          /* type check param */
-         
+
          /* next param */
          param_desc = param_desc->next;
          param_expr = param_expr->next;
     }
 
-    INTERNAL_ERROR(c); /* TODO:jkd */
+    INTERNAL_ERROR(); /* TODO:jkd */
 }
 
 /*----------------------------------------------------------------------*/
 static void compile_bin_op(compile_state_t *c, ast_expression_t *expression) {
     token_type_t operation = expression->u.bin_op.operation;
+    type_t *left_type, *right_type;
     opcode_subtype_t subtype;
-
-    subtype = OP_ST_SI32; /* TODO:jkd */
 
     compile_expression(c, expression->u.bin_op.right);
     compile_expression(c, expression->u.bin_op.left);
+
+    left_type = expression->u.bin_op.left->type;
+    right_type = expression->u.bin_op.right->type;
+    if (left_type != right_type)
+        error(c, "type mismatch for binop");
+
+    expression->type = left_type;
+    if (expression->type->tag != TTAG_BASIC_TYPE)
+        error(c, "non-numeric types in binop");
+
+    switch (expression->type->u.basic_type) {
+        case T_INT8:   subtype = OP_ST_SI8;  break;
+        case T_INT16:  subtype = OP_ST_SI16; break;
+        case T_INT32:  subtype = OP_ST_SI32; break;
+        case T_INT64:  subtype = OP_ST_SI64; break;
+        case T_UINT8:  subtype = OP_ST_UI8;  break;
+        case T_UINT16: subtype = OP_ST_UI16; break;
+        case T_UINT32: subtype = OP_ST_UI32; break;
+        case T_UINT64: subtype = OP_ST_UI64; break;
+        case T_FLOAT:  subtype = OP_ST_F;    break;
+        case T_DOUBLE: subtype = OP_ST_D;    break;
+        default: INTERNAL_ERROR();
+    }
 
     switch (operation) {
         case TK_PLUS:           bcbuild_ADD(&c->out->bytestream, subtype); break;
@@ -418,6 +454,59 @@ static void compile_bin_op(compile_state_t *c, ast_expression_t *expression) {
         case TK_EQUALS_EQUALS:  bcbuild_TE (&c->out->bytestream, subtype); break;
         case TK_GREATER_EQUAL:  bcbuild_TGE(&c->out->bytestream, subtype); break;
         case TK_GREATER:        bcbuild_TG (&c->out->bytestream, subtype); break;
-        default: INTERNAL_ERROR(c);
+        default: INTERNAL_ERROR();
     }
+}
+
+/*----------------------------------------------------------------------*/
+static void build_types_table(hash_table_t *table, allocator_t *allocator) {
+    typedef struct {
+        const char *str;
+        basic_type_t basic_type;
+        size_t size;
+    } builtin_t;
+
+    static builtin_t builtins[] = {
+        { "int8",   T_INT8   },
+        { "int16",  T_INT16  },
+        { "int32",  T_INT32  },
+        { "int64",  T_INT64  },
+        { "uint8",  T_UINT8  },
+        { "uint16", T_UINT16 },
+        { "uint32", T_UINT32 },
+        { "uint64", T_UINT64 },
+        { "float",  T_FLOAT  },
+        { "double", T_DOUBLE }
+    };
+
+    size_t num_builtins = sizeof(builtins) / sizeof(builtins[0]);
+    size_t i;
+    builtin_t *builtin;
+    type_t *type;
+
+    for (i = 0; i < num_builtins; ++i) {
+        builtin = &builtins[i];
+        type =  ALLOCATOR_ALLOC(allocator, sizeof(type_t));
+        type->tag = TTAG_BASIC_TYPE;
+        type->u.basic_type = builtin->basic_type;
+        type->size = builtin->size;
+        hash_table_insert(table, builtin->str, type);
+    }
+}
+
+/*----------------------------------------------------------------------*/
+static type_t *token_to_type(compile_state_t *c, token_t *token) {
+    if (token == NULL)
+        return NULL;
+    if (token->type == TK_INT_LITERAL) {
+        return str_to_type(c, "int32");
+    } else if (token->type == TK_IDENTIFIER) {
+        return str_to_type(c, token->u.s);
+    }
+    return NULL;
+}
+
+/*----------------------------------------------------------------------*/
+static type_t *str_to_type(compile_state_t *c, const char *str) {
+    return hash_table_find(c->types_table, str);
 }

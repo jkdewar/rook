@@ -74,6 +74,22 @@ void bcbuild_PUSH_SI32(bytestream_t *bs, int32_t value) {
 }
 
 /*----------------------------------------------------------------------*/
+void bcbuild_PUSH_F(bytestream_t *bs, float value) {
+    INST(OP_PUSH);
+    i.subtype = OP_ST_F;
+    i.u.push_f.value = value;
+    PUSH();
+}
+
+/*----------------------------------------------------------------------*/
+void bcbuild_PUSH_D(bytestream_t *bs, double value) {
+    INST(OP_PUSH);
+    i.subtype = OP_ST_D;
+    i.u.push_d.value = value;
+    PUSH();
+}
+
+/*----------------------------------------------------------------------*/
 void bcbuild_ADD(bytestream_t *bs, opcode_subtype_t st) {
     INST(OP_ADD);
     i.subtype = st;
