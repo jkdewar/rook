@@ -389,7 +389,7 @@ static void compile_function_call(compile_state_t *c, ast_expression_t *expressi
          /* compile param */
          compile_expression(c, param_expr->expr);
          /* type check param */
-
+         
          /* next param */
          param_desc = param_desc->next;
          param_expr = param_expr->next;

@@ -44,7 +44,7 @@ int rook_do_file(rook_state_t *R, const char *file_name) {
     /* lex */
     {
         lex_input_t lex_input;
-        lex_input.s = source;
+        lex_input.source = source;
         lex_input.allocator = &R->allocator;
         lex(&lex_input, &lex_output);
         if (lex_output.error) {

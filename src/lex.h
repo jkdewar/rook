@@ -61,12 +61,12 @@ typedef struct {
 #define LEX_ERROR_BUF_SIZE 1024
 
 typedef struct {
-    const char *s;
+    const char *source;
     allocator_t *allocator;
 } lex_input_t;
 
 typedef struct {
-    const char *s;
+    const char *source;
     token_t *tokens;
     size_t token_count;
     int error;

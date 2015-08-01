@@ -35,8 +35,8 @@ void lex(lex_input_t *in, lex_output_t *out) {
 
     l->in = in;
     l->out = out;
-    l->out->s = l->in->s;
-    l->ptr = l->in->s;
+    l->out->source = l->in->source;
+    l->ptr = l->in->source;
     l->token_alloced = 1024; /* default reserved size for tokens */
     /* TODO:jkd token list currently does not use allocator, because we use realloc */
     /* TODO:jkd token list also leaks */
@@ -67,12 +67,12 @@ void lex(lex_input_t *in, lex_output_t *out) {
 /*----------------------------------------------------------------------*/
 void lex_token_pos(lex_output_t *out, size_t token_index, token_pos_t *token_pos) {
     token_t *token;
-    const char *p = out->s;
+    const char *p = out->source;
     const char *token_start;
 
     if (out->token_count == 0) {
-        token_pos->line_start = out->s;
-        token_pos->line_end = out->s;
+        token_pos->line_start = out->source;
+        token_pos->line_end = out->source;
         token_pos->line_num = 0;
         token_pos->line_pos = 0;
         return;
@@ -83,7 +83,7 @@ void lex_token_pos(lex_output_t *out, size_t token_index, token_pos_t *token_pos
     } else {
         token = &out->tokens[token_index];
     }
-    token_start = out->s + token->source_pos;
+    token_start = out->source + token->source_pos;
     token_pos->line_num = 1;
     token_pos->line_start = p;
     while (p < token_start) {
@@ -98,7 +98,8 @@ void lex_token_pos(lex_output_t *out, size_t token_index, token_pos_t *token_pos
            *token_pos->line_end != '\n') {
         token_pos->line_end += 1;
     }
-    token_pos->line_pos = token->source_pos - (token_pos->line_start - out->s);
+    token_pos->line_pos = token->source_pos
+            - (token_pos->line_start - out->source);
 }
 
 /*----------------------------------------------------------------------*/
@@ -111,7 +112,7 @@ static void error(lex_state_t *l) {
     int i;
 
     /* find the line on which the error occurred */
-    p = l->in->s;
+    p = l->in->source;
     line_num = 1;
     line_start = p;
     while (p < l->ptr) {
@@ -147,7 +148,7 @@ static int next_token(lex_state_t *l) {
     char cn;
     token = &l->out->tokens[l->out->token_count];
     skip_comments_and_whitespace(l);
-    token->source_pos = l->ptr - l->in->s;
+    token->source_pos = l->ptr - l->in->source;
     c  = *(l->ptr + 0);
     cn = *(l->ptr + 1);
     if (c == '\0') {
