@@ -1,6 +1,7 @@
+func foo(x:int, y:int)
+end
+
 func main()
-    var x
-    x = 14
-    return x
+    return foo(14, 15)
 end
 

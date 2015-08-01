@@ -152,7 +152,7 @@ static ast_statement_t *parse_declare_var(parse_state_t *p) {
 
     statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
     memset(statement, 0, sizeof(ast_statement_t));
-    statement->type = AST_STATEMENT_DECLARE_VARIABLE;
+    statement->tag = AST_STATEMENT_DECLARE_VARIABLE;
 
     /* var */
     token = next_token(p);
@@ -175,7 +175,7 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
 
     statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
     memset(statement, 0, sizeof(ast_statement_t));
-    statement->type = AST_STATEMENT_DEFINE_FUNCTION;
+    statement->tag = AST_STATEMENT_DEFINE_FUNCTION;
     statement->u.define_function.first_parameter = NULL;
     statement->u.define_function.block = NULL;
     statement->u.define_function.return_type_token.type =
@@ -261,7 +261,7 @@ static ast_statement_t *parse_return(parse_state_t *p) {
 
     statement = ALLOC(sizeof(ast_statement_t));
     memset(statement, 0, sizeof(ast_statement_t));
-    statement->type = AST_STATEMENT_RETURN;
+    statement->tag = AST_STATEMENT_RETURN;
 
     /* return keyword */
     token = next_token(p);
@@ -290,7 +290,7 @@ static ast_statement_t *parse_if(parse_state_t *p) {
 
     statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
     memset(statement, 0, sizeof(ast_statement_t));
-    statement->type = AST_STATEMENT_IF;
+    statement->tag = AST_STATEMENT_IF;
 
     /* if predicate / block */
     statement->u.if_.condition = parse_logical_expression(p);
@@ -321,7 +321,7 @@ static ast_statement_t *parse_for(parse_state_t *p) {
 
     statement_for = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
     memset(statement_for, 0, sizeof(ast_statement_t));
-    statement_for->type = AST_STATEMENT_FOR;
+    statement_for->tag = AST_STATEMENT_FOR;
     statement_for->u.for_.initialize = NULL;
     statement_for->u.for_.condition = NULL;
     statement_for->u.for_.increment = NULL;
@@ -413,7 +413,7 @@ static ast_statement_t *parse_assignment(parse_state_t *p) {
 
     statement = (ast_statement_t*) ALLOC(sizeof(ast_statement_t));
     memset(statement, 0, sizeof(ast_statement_t));
-    statement->type = AST_STATEMENT_ASSIGNMENT;
+    statement->tag = AST_STATEMENT_ASSIGNMENT;
 
     /* identifier (lvalue) */
     token = next_token(p);
@@ -458,7 +458,7 @@ static ast_expression_t *parse_logical_op(parse_state_t *p, ast_expression_t *le
         right = parse_compare_term(p);
 
         bin_op = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
-        bin_op->type = AST_EXPRESSION_BIN_OP;
+        bin_op->tag = AST_EXPRESSION_BIN_OP;
         bin_op->u.bin_op.left = left;
         bin_op->u.bin_op.right = right;
         bin_op->u.bin_op.operation = token->type;
@@ -500,7 +500,7 @@ static ast_expression_t *parse_compare_op(parse_state_t *p, ast_expression_t *le
         right = parse_expression(p);
 
         bin_op = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
-        bin_op->type = AST_EXPRESSION_BIN_OP;
+        bin_op->tag = AST_EXPRESSION_BIN_OP;
         bin_op->u.bin_op.left = left;
         bin_op->u.bin_op.right = right;
         bin_op->u.bin_op.operation = token->type;
@@ -538,7 +538,7 @@ static ast_expression_t *parse_sum_op(parse_state_t *p, ast_expression_t *left) 
         right = parse_term(p);
 
         bin_op = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
-        bin_op->type = AST_EXPRESSION_BIN_OP;
+        bin_op->tag = AST_EXPRESSION_BIN_OP;
         bin_op->u.bin_op.left = left;
         bin_op->u.bin_op.right = right;
         bin_op->u.bin_op.operation = token->type;
@@ -585,7 +585,7 @@ static ast_expression_t *parse_term_op(parse_state_t *p, ast_expression_t *left)
         right = parse_signed_factor(p);
 
         bin_op = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
-        bin_op->type = AST_EXPRESSION_BIN_OP;
+        bin_op->tag = AST_EXPRESSION_BIN_OP;
         bin_op->u.bin_op.left = left;
         bin_op->u.bin_op.right = right;
         bin_op->u.bin_op.operation = token->type;
@@ -651,7 +651,7 @@ static ast_expression_t *parse_literal(parse_state_t *p) {
     token_t *token = next_token(p);
     ast_expression_t *expression =
             (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
-    expression->type = AST_EXPRESSION_LITERAL;
+    expression->tag = AST_EXPRESSION_LITERAL;
     expression->u.literal.token = *token; /* TODO:jkd copy? */
     return expression;
 }
@@ -661,7 +661,7 @@ static ast_expression_t *parse_variable(parse_state_t *p) {
     token_t *token = next_token(p);
     ast_expression_t *expression =
             (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
-    expression->type = AST_EXPRESSION_VARIABLE;
+    expression->tag = AST_EXPRESSION_VARIABLE;
     expression->u.variable.token = *token; /* TODO:jkd copy? */
     return expression;
 }
@@ -675,7 +675,7 @@ static ast_expression_t *parse_function_call(parse_state_t *p) {
     expression = (ast_expression_t *)ALLOC(sizeof(ast_expression_t));
     memset(expression, 0, sizeof(ast_expression_t));
 
-    expression->type = AST_EXPRESSION_FUNCTION_CALL;
+    expression->tag = AST_EXPRESSION_FUNCTION_CALL;
     /* function identifier */
     token = next_token(p);
     EXPECT(token, TK_IDENTIFIER, "function name expected");
@@ -687,6 +687,7 @@ static ast_expression_t *parse_function_call(parse_state_t *p) {
 
     /* parameter list */
     param = NULL;
+    expression->u.function_call.parameter_count = 0;
     for (;;) {
         token = peek_token(p);
         if (test_token(token, TK_RBRACKET))
@@ -699,21 +700,22 @@ static ast_expression_t *parse_function_call(parse_state_t *p) {
         if (new_param->expr == NULL)
             error(p, "expression expected");
         if (param == NULL) {
-            expression->u.function_call.expr_list = new_param;
+            expression->u.function_call.parameter_expr_list = new_param;
         } else {
             param->next = new_param;
         }
         param = new_param;
+        expression->u.function_call.parameter_count += 1;
 
         /* comma? */
         token = peek_token(p);
-        if (test_token(token, TK_COMMA)) {
-            next_token(p);
-            break;
-        }
-
         if (test_token(token, TK_RBRACKET))
             break;
+
+        if (test_token(token, TK_COMMA)) {
+            next_token(p);
+            continue;
+        }
 
         error(p, "',' or ')' expected");
     }

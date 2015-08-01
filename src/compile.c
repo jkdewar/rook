@@ -22,13 +22,27 @@ typedef struct {
     compile_context_t context;
     hash_table_t *local_symbol_table;
     uint32_t next_local_symbol_offset;
+    hash_table_t *function_table;
 } compile_state_t;
 
 typedef struct {
     const char *name;
     type_t type;
     uint32_t stack_pos;
-} symbol_entry_t;
+} symbol_table_entry_t;
+
+typedef struct function_parameter_t {
+    const char *name;
+    type_t type;
+    struct function_parameter_t *next;
+} function_parameter_t;
+
+typedef struct {
+    const char *name;
+    type_t return_type;
+    function_parameter_t *first_parameter;
+    size_t parameter_count;
+} function_table_entry_t;
 
 static void error(compile_state_t *c, const char *msg);
 static void compile_statement_list(compile_state_t *c, ast_statement_t *first_statement);
@@ -57,6 +71,7 @@ void compile(compile_input_t *in, compile_output_t *out) {
     bytestream_init(&c->out->bytestream, 1024 * 16);
     c->context = COMPILE_CONTEXT_GLOBAL;
     c->local_symbol_table = hash_table_create(c->in->allocator);
+    c->function_table = hash_table_create(c->in->allocator);
 
     if (setjmp(c->jmpbuf)) {
         return;
@@ -97,7 +112,7 @@ static void compile_statement_list(compile_state_t *c, ast_statement_t *first_st
 
 /*----------------------------------------------------------------------*/
 static void compile_statement(compile_state_t *c, ast_statement_t *statement) {
-    switch (statement->type) {
+    switch (statement->tag) {
         case AST_STATEMENT_DECLARE_VARIABLE: compile_declare_variable(c, statement); break;
         case AST_STATEMENT_DEFINE_FUNCTION: compile_define_function(c, statement); break;
         case AST_STATEMENT_RETURN: compile_return(c, statement); break;
@@ -111,7 +126,7 @@ static void compile_statement(compile_state_t *c, ast_statement_t *statement) {
 /*----------------------------------------------------------------------*/
 static void compile_declare_variable(compile_state_t *c, ast_statement_t *statement) {
     const char *name;
-    symbol_entry_t *entry;
+    symbol_table_entry_t *entry;
 
     if (c->context != COMPILE_CONTEXT_FUNCTION_BODY) {
         error(c, "variable defined outside of function body");
@@ -121,11 +136,13 @@ static void compile_declare_variable(compile_state_t *c, ast_statement_t *statem
 
     /* check for duplicate symbols */
     entry = hash_table_find(c->local_symbol_table, name);
-    if (entry != NULL)
+    if (entry != NULL) {
+        printf("'%s': ", name);
         error(c, "duplicate symbol");
+    }
 
     /* add variable to local symbol table */
-    entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_entry_t));
+    entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
     entry->name = name; /* TODO:jkd copy? */
     entry->stack_pos = c->next_local_symbol_offset;
     hash_table_insert(c->local_symbol_table, name, entry);
@@ -140,6 +157,34 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
         error(c, "local function definitions are not allowed");
     c->context = COMPILE_CONTEXT_FUNCTION_BODY;
 
+    /* add function to table */
+    {
+        function_table_entry_t *entry;
+        function_parameter_t *param, *prev_param;
+        ast_function_parameter_t *ast_param;
+
+        entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(function_table_entry_t));
+        entry->name = statement->u.define_function.name_token.u.s; /* TODO:jkd copy? */
+        entry->return_type.tag = TTAG_BASIC;
+        entry->return_type.u.basic_type = T_INT32; /* TODO:jkd */
+        entry->parameter_count = 0;
+        prev_param = NULL;
+        for (ast_param = statement->u.define_function.first_parameter;
+                ast_param != NULL;  ast_param = ast_param->next) {
+            param = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(function_parameter_t));
+            param->type.tag = TTAG_BASIC;
+            param->type.u.basic_type = T_INT32; /* TODO:jkd */
+            if (prev_param == NULL) {
+                entry->first_parameter = param;
+            } else {
+                prev_param->next = param;
+            }
+            prev_param = param;
+            entry->parameter_count += 1;
+        }
+        hash_table_insert(c->function_table, entry->name, entry);
+    }
+
     bcbuild_FRAME(&c->out->bytestream, 0, &frame_size_loc); /* frame size filled in below */
 
     /* clear local symbol table */
@@ -151,10 +196,11 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
         uint32_t frame_junk_size = sizeof(uint32_t) * 3; /* sp, bp, return address */
         uint32_t parameter_location = -frame_junk_size;
         ast_function_parameter_t *param;
-        symbol_entry_t *entry;
-        for (param = statement->u.define_function.first_parameter; param != NULL; param = param->next) {
+        symbol_table_entry_t *entry;
+        for (param = statement->u.define_function.first_parameter;
+                param != NULL; param = param->next) {
             parameter_location -= sizeof(int32_t); /* size of parameter TODO:jkd */
-            entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_entry_t));
+            entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
             entry->name = param->identifier_token.u.s; /* TODO:jkd copy? */
             entry->type.tag = TTAG_BASIC;       /* TODO:jkd */
             entry->type.u.basic_type = T_INT32;
@@ -259,7 +305,7 @@ static void compile_for(compile_state_t *c, ast_statement_t *statement) {
 static void compile_assignment(compile_state_t *c, ast_statement_t *statement) {
     const char *name;
     uint32_t size;
-    symbol_entry_t *entry;
+    symbol_table_entry_t *entry;
 
     /* evaluate rvalue */
     compile_expression(c, statement->u.assignment.expr);
@@ -277,7 +323,7 @@ static void compile_assignment(compile_state_t *c, ast_statement_t *statement) {
 
 /*----------------------------------------------------------------------*/
 static void compile_expression(compile_state_t *c, ast_expression_t *expression) {
-    switch (expression->type) {
+    switch (expression->tag) {
         case AST_EXPRESSION_LITERAL: compile_literal(c, expression); break;
         case AST_EXPRESSION_VARIABLE: compile_variable(c, expression); break;
         case AST_EXPRESSION_FUNCTION_CALL: compile_function_call(c, expression); break;
@@ -304,7 +350,7 @@ static void compile_literal(compile_state_t *c, ast_expression_t *expression) {
 /*----------------------------------------------------------------------*/
 static void compile_variable(compile_state_t *c, ast_expression_t *expression) {
     const char *name;
-    symbol_entry_t *entry;
+    symbol_table_entry_t *entry;
     uint32_t size;
 
     name = expression->u.variable.token.u.s;
@@ -317,7 +363,39 @@ static void compile_variable(compile_state_t *c, ast_expression_t *expression) {
 
 /*----------------------------------------------------------------------*/
 static void compile_function_call(compile_state_t *c, ast_expression_t *expression) {
-    INTERNAL_ERROR(c);
+    const char *function_name;
+    function_table_entry_t *entry;
+    function_parameter_t *param_desc;
+    ast_expression_list_t *param_expr;
+
+    /* function name */
+    if (expression->u.function_call.identifier.type != TK_IDENTIFIER)
+        INTERNAL_ERROR(c);
+    function_name = expression->u.function_call.identifier.u.s;
+
+    /* look up function in table */
+    entry = hash_table_find(c->function_table, function_name);
+    if (entry == NULL)
+        error(c, "call to undefined function");
+
+    /* verify number of parameters */
+    if (expression->u.function_call.parameter_count != entry->parameter_count)
+        error(c, "wrong number of parameters");
+
+    /* parameters */
+    param_desc = entry->first_parameter;
+    param_expr = expression->u.function_call.parameter_expr_list;
+    while (param_desc != NULL) {
+         /* compile param */
+         compile_expression(c, param_expr->expr);
+         /* type check param */
+
+         /* next param */
+         param_desc = param_desc->next;
+         param_expr = param_expr->next;
+    }
+
+    INTERNAL_ERROR(c); /* TODO:jkd */
 }
 
 /*----------------------------------------------------------------------*/

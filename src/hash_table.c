@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-#define MAX_KEY_LEN 128
+#define MAX_KEY_LEN 127
 #define NUM_BIN_BITS 12
 #define NUM_BINS (1 << NUM_BIN_BITS)
 #define BIN_MASK ((1 << NUM_BIN_BITS) - 1)
@@ -43,6 +43,14 @@ hash_table_t *hash_table_create(allocator_t *allocator) {
 
 /*----------------------------------------------------------------------*/
 void hash_table_clear(hash_table_t *hash_table) { /* TODO:jkd*/
+    size_t i;
+    hash_table_entry_t *entry;
+    for (i = 0; i < NUM_BINS; ++i) {
+        for (entry = hash_table->bins[i]; entry != NULL; entry = entry->next) {
+            ALLOCATOR_FREE(hash_table->allocator, entry->value);
+        }
+        hash_table->bins[i] = NULL;
+    }
 }
 
 /*----------------------------------------------------------------------*/

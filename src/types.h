@@ -19,13 +19,15 @@ typedef struct {
     int blah;
 } struct_type_t;
 
+typedef struct type_t type_t;
+
 typedef union {
     basic_type_t basic_type;
     struct_type_t struct_type;
-    struct type_t *pointer_type;
+    type_t *pointer_type;
 } type_union_t;
 
-typedef struct {
+struct type_t {
     type_tag_t tag;
     type_union_t u;
-} type_t;
+};
