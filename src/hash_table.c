@@ -41,12 +41,14 @@ hash_table_t *hash_table_create(allocator_t *allocator) {
 }
 
 /*----------------------------------------------------------------------*/
-void hash_table_clear(hash_table_t *hash_table) { /* TODO:jkd*/
+void hash_table_clear(hash_table_t *hash_table, int free_values) {
     size_t i;
     hash_table_entry_t *entry;
     for (i = 0; i < NUM_BINS; ++i) {
         for (entry = hash_table->bins[i]; entry != NULL; entry = entry->next) {
-            ALLOCATOR_FREE(hash_table->allocator, entry->value);
+            if (free_values)
+                ALLOCATOR_FREE(hash_table->allocator, entry->value);
+            ALLOCATOR_FREE(hash_table->allocator, entry);
         }
         hash_table->bins[i] = NULL;
     }

@@ -68,6 +68,7 @@ typedef struct {
 void bcbuild_STORE(bytestream_t *bs, uint32_t size, int32_t stack_pos);
 void bcbuild_LOAD(bytestream_t *bs, uint32_t size, int32_t stack_pos);
 void bcbuild_FRAME(bytestream_t *bs, uint32_t size, uint32_t *size_where);
+void bcbuild_CALL(bytestream_t *bs, uint32_t address);
 void bcbuild_RET(bytestream_t *bs);
 void bcbuild_J(bytestream_t *bs, uint32_t address, uint32_t *address_where);
 void bcbuild_JT(bytestream_t *bs, uint32_t address, uint32_t *address_where);

@@ -34,6 +34,13 @@ void bcbuild_FRAME(bytestream_t *bs, uint32_t size, uint32_t *size_where) {
 }
 
 /*----------------------------------------------------------------------*/
+void bcbuild_CALL(bytestream_t *bs, uint32_t address) {
+    INST(OP_CALL);
+    i.u.call.address = address;
+    PUSH();
+}
+
+/*----------------------------------------------------------------------*/
 void bcbuild_RET(bytestream_t *bs) {
     INST(OP_RET);
     PUSH();

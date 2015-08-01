@@ -42,6 +42,7 @@ typedef struct function_parameter_t {
 
 typedef struct {
     const char *name;
+    uint32_t address;
     type_t *return_type;
     function_parameter_t *first_parameter;
     size_t parameter_count;
@@ -177,15 +178,17 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
         ast_function_parameter_t *ast_param;
 
         entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(function_table_entry_t));
-        entry->name = statement->u.define_function.name_token.u.s; /* TODO:jkd copy? */
-        entry->return_type = token_to_type(c, &statement->u.define_function.return_type_token);
+        BZERO(entry);
+        entry->name = statement->u.define_function.name_token->u.s; /* TODO:jkd copy? */
+        entry->address = bytestream_where(&c->out->bytestream);
+        entry->return_type = token_to_type(c, statement->u.define_function.return_type_token);
         entry->parameter_count = 0;
         prev_param = NULL;
         for (ast_param = statement->u.define_function.first_parameter;
                 ast_param != NULL; ast_param = ast_param->next) {
             param = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(function_parameter_t));
             BZERO(param);
-            param->type = token_to_type(c, &ast_param->type_token);
+            param->type = token_to_type(c, ast_param->type_token);
             if (prev_param == NULL) {
                 entry->first_parameter = param;
             } else {
@@ -200,7 +203,7 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
     bcbuild_FRAME(&c->out->bytestream, 0, &frame_size_loc); /* frame size filled in below */
 
     /* clear local symbol table */
-    hash_table_clear(c->local_symbol_table);
+    hash_table_clear(c->local_symbol_table, /*free_values=*/1);
 
     /* Put function parameters into the symbol table.
      * They have negative locations, because they are stored above bp. */
@@ -213,8 +216,8 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
                 param != NULL; param = param->next) {
             parameter_location -= sizeof(int32_t); /* size of parameter TODO:jkd */
             entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
-            entry->name = param->identifier_token.u.s; /* TODO:jkd copy? */
-            entry->type = NULL; /* TODO:jkd */
+            entry->name = param->identifier_token->u.s; /* TODO:jkd copy? */
+            entry->type = token_to_type(c, param->type_token);
             /* TODO:jkd entry->location = parameter_location; */
             hash_table_insert(c->local_symbol_table, entry->name, entry);
         }
@@ -239,8 +242,8 @@ static void compile_return(compile_state_t *c, ast_statement_t *statement) {
 
         /* move return value to just above the top of frame and parameters */
         {
-            int32_t frameJunkSize = sizeof(int) * 3; /* sp, bp, return address */
-            int32_t returnTypeSize = sizeof(int32_t); /* TODO:jkd */
+            int32_t frameJunkSize = sizeof(uint32_t) * 3; /* sp, bp, return address */
+            int32_t returnTypeSize = statement->u.return_.expr->type->size;
             bcbuild_STORE(&c->out->bytestream, returnTypeSize,
                     - returnTypeSize - frameJunkSize);
         }
@@ -322,7 +325,8 @@ static void compile_assignment(compile_state_t *c, ast_statement_t *statement) {
     compile_expression(c, statement->u.assignment.expr);
 
     /* look up symbol */
-    name = statement->u.assignment.identifier.u.s;
+    assert(statement->u.assignment.identifier->type == TK_IDENTIFIER);
+    name = statement->u.assignment.identifier->u.s;
     entry = hash_table_find(c->local_symbol_table, name);
     if (entry == NULL)
         error(c, "undeclared identifier");
@@ -350,17 +354,17 @@ static void compile_expression(compile_state_t *c, ast_expression_t *expression)
 
 /*----------------------------------------------------------------------*/
 static void compile_literal(compile_state_t *c, ast_expression_t *expression) {
-    switch (expression->u.literal.token.type) {
+    switch (expression->u.literal.token->type) {
         case TK_INT_LITERAL:
-            bcbuild_PUSH_SI32(&c->out->bytestream, expression->u.literal.token.u.i);
+            bcbuild_PUSH_SI32(&c->out->bytestream, expression->u.literal.token->u.i);
             expression->type = str_to_type(c, "int32");
             break;
         case TK_FLOAT_LITERAL:
-            bcbuild_PUSH_F(&c->out->bytestream, expression->u.literal.token.u.f);
+            bcbuild_PUSH_F(&c->out->bytestream, expression->u.literal.token->u.f);
             expression->type = str_to_type(c, "float");
             break;
         case TK_DOUBLE_LITERAL:
-            bcbuild_PUSH_D(&c->out->bytestream, expression->u.literal.token.u.d);
+            bcbuild_PUSH_D(&c->out->bytestream, expression->u.literal.token->u.d);
             expression->type = str_to_type(c, "double");
             break;
         /* TODO:jkd
@@ -375,7 +379,7 @@ static void compile_variable(compile_state_t *c, ast_expression_t *expression) {
     const char *name;
     symbol_table_entry_t *entry;
 
-    name = expression->u.variable.token.u.s;
+    name = expression->u.variable.token->u.s;
     entry = hash_table_find(c->local_symbol_table, name);
     if (entry == NULL)
         error(c, "undeclared identifier");
@@ -391,33 +395,40 @@ static void compile_function_call(compile_state_t *c, ast_expression_t *expressi
     ast_expression_list_t *param_expr;
 
     /* function name */
-    if (expression->u.function_call.identifier.type != TK_IDENTIFIER)
+    if (expression->u.function_call.identifier->type != TK_IDENTIFIER)
         INTERNAL_ERROR();
-    function_name = expression->u.function_call.identifier.u.s;
+    function_name = expression->u.function_call.identifier->u.s;
 
     /* look up function in table */
     entry = hash_table_find(c->function_table, function_name);
     if (entry == NULL)
         error(c, "call to undefined function");
 
+    expression->type = entry->return_type;
+
     /* verify number of parameters */
     if (expression->u.function_call.parameter_count != entry->parameter_count)
         error(c, "wrong number of parameters");
 
-    /* parameters */
+    /* push parameters */
     param_desc = entry->first_parameter;
     param_expr = expression->u.function_call.parameter_expr_list;
     while (param_desc != NULL) {
-         /* compile param */
+
+         /* compile param expression */
          compile_expression(c, param_expr->expr);
+
          /* type check param */
+         if (param_expr->expr->type != param_desc->type)
+            error(c, "parameter type mismatch");
 
          /* next param */
          param_desc = param_desc->next;
          param_expr = param_expr->next;
     }
 
-    INTERNAL_ERROR(); /* TODO:jkd */
+    /* call function */
+    bcbuild_CALL(&c->out->bytestream, entry->address);
 }
 
 /*----------------------------------------------------------------------*/

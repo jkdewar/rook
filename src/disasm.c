@@ -54,6 +54,7 @@ void disasm(uint8_t *bytecode, size_t size) {
             case OP_TE:  printf("TE."); print_subtype(inst->subtype); break;
             case OP_TGE: printf("TGE."); print_subtype(inst->subtype); break;
             case OP_TG:  printf("TG."); print_subtype(inst->subtype); break;
+            case OP_CALL: printf("CALL %d", inst->u.call.address); break;
             case OP_RET: printf("RET"); break;
             case OP_FRAME: printf("FRAME %d", inst->u.frame.size); break;
             case OP_STORE: printf("STORE %d %d", inst->u.store.size, inst->u.store.stack_pos); break;

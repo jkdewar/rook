@@ -185,10 +185,6 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
     statement = ALLOC(sizeof(ast_statement_t));
     BZERO(statement);
     statement->tag = AST_STATEMENT_DEFINE_FUNCTION;
-    statement->u.define_function.first_parameter = NULL;
-    statement->u.define_function.block = NULL;
-    statement->u.define_function.return_type_token.type =
-            TK_FUNCTION; /* TODO:jkd hacky way to specify no return type */
 
     /* function keyword */
     token = next_token(p);
@@ -197,7 +193,7 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
     /* function name */
     token = next_token(p);
     EXPECT(token, TK_IDENTIFIER, "function name expected");
-    statement->u.define_function.name_token = *token;
+    statement->u.define_function.name_token = token;
 
     /* function parameters */
     token = peek_token(p);
@@ -218,7 +214,7 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
             }
 
             /* parameter name */
-            parameter->identifier_token = *token;
+            parameter->identifier_token = token;
 
             /* colon before parameter type */
             token = next_token(p);
@@ -227,7 +223,7 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
             /* parameter type */
             token = next_token(p);
             EXPECT(token, TK_IDENTIFIER, "parameter type expected");
-            parameter->type_token = *token;
+            parameter->type_token = token;
 
             /* comma? */
             token = peek_token(p);
@@ -248,7 +244,7 @@ static ast_statement_t *parse_define_function(parse_state_t *p) {
 
         /* return type */
         token = next_token(p);
-        statement->u.define_function.return_type_token = *token;
+        statement->u.define_function.return_type_token = token;
         EXPECT(token, TK_IDENTIFIER, "return type expected");
     }
 
@@ -426,7 +422,7 @@ static ast_statement_t *parse_assignment(parse_state_t *p) {
     /* identifier (lvalue) */
     token = next_token(p);
     EXPECT(token, TK_IDENTIFIER, "identifier expected");
-    statement->u.assignment.identifier = *token; /* TODO:jkd copy? */
+    statement->u.assignment.identifier = token;
 
     /* equals */
     token = next_token(p);
@@ -663,7 +659,7 @@ static ast_expression_t *parse_literal(parse_state_t *p) {
     ast_expression_t *expression = ALLOC(sizeof(ast_expression_t));
     BZERO(expression);
     expression->tag = AST_EXPRESSION_LITERAL;
-    expression->u.literal.token = *token; /* TODO:jkd copy? */
+    expression->u.literal.token = token;
     return expression;
 }
 
@@ -673,7 +669,7 @@ static ast_expression_t *parse_variable(parse_state_t *p) {
     ast_expression_t *expression = ALLOC(sizeof(ast_expression_t));
     BZERO(expression);
     expression->tag = AST_EXPRESSION_VARIABLE;
-    expression->u.variable.token = *token; /* TODO:jkd copy? */
+    expression->u.variable.token = token;
     return expression;
 }
 
@@ -690,7 +686,7 @@ static ast_expression_t *parse_function_call(parse_state_t *p) {
     /* function identifier */
     token = next_token(p);
     EXPECT(token, TK_IDENTIFIER, "function name expected");
-    expression->u.function_call.identifier = *token; /* TODO:jkd copy? */
+    expression->u.function_call.identifier = token;
 
     /* opening bracket */
     token = next_token(p);

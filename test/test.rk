@@ -1,5 +1,13 @@
+func bar()
+    return
+end
+
+func foo(x:double):double
+    return x
+end
+
 func main():int
-    var x:int
-    x = 42
-    return x + x
+    var d:double
+    d = foo(123.0)
+    return 99
 end

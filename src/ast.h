@@ -20,15 +20,15 @@ typedef struct {
 } ast_statement_declare_variable_t;
 
 typedef struct ast_function_parameter_t {
-    token_t identifier_token;
-    token_t type_token;
+    token_t *identifier_token;
+    token_t *type_token;
     struct ast_function_parameter_t *next;
 } ast_function_parameter_t;
 
 typedef struct {
-    token_t name_token;
+    token_t *name_token;
     ast_function_parameter_t *first_parameter;
-    token_t return_type_token;
+    token_t *return_type_token;
     ast_statement_t *block;
 } ast_statement_define_function_t;
 
@@ -50,7 +50,7 @@ typedef struct {
 } ast_statement_for_t;
 
 typedef struct {
-    token_t identifier;
+    token_t *identifier;
     ast_expression_t *expr;
 } ast_statement_assignment_t;
 
@@ -77,15 +77,15 @@ typedef enum {
 } ast_expression_tag_t;
 
 typedef struct {
-    token_t token;
+    token_t *token;
 } ast_expression_literal_t;
 
 typedef struct {
-    token_t token;
+    token_t *token;
 } ast_expression_variable_t;
 
 typedef struct {
-    token_t identifier;
+    token_t *identifier;
     ast_expression_list_t *parameter_expr_list;
     size_t parameter_count;
 } ast_expression_function_call_t;
