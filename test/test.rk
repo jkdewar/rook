@@ -1,4 +1,6 @@
-func main():int32
-    return 1988.0 + 3.0
+func main():int
+    var x:float
+    x = 42
+    return x
 end
 

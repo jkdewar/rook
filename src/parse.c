@@ -161,7 +161,16 @@ static ast_statement_t *parse_declare_var(parse_state_t *p) {
     /* identifier */
     token = next_token(p);
     EXPECT(token, TK_IDENTIFIER, "variable name expected");
-    statement->u.declare_variable.token = *token;
+    statement->u.declare_variable.name_token = token;
+
+    /* colon */
+    token = next_token(p);
+    EXPECT(token, TK_COLON, "':' expected'");
+
+    /* type */
+    token = next_token(p);
+    EXPECT(token, TK_IDENTIFIER, "type expected");
+    statement->u.declare_variable.type_token = token;
 
     return statement;
 }

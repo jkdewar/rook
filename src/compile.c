@@ -134,13 +134,17 @@ static void compile_statement(compile_state_t *c, ast_statement_t *statement) {
 /*----------------------------------------------------------------------*/
 static void compile_declare_variable(compile_state_t *c, ast_statement_t *statement) {
     const char *name;
+    type_t *type;
     symbol_table_entry_t *entry;
 
     if (c->context != COMPILE_CONTEXT_FUNCTION_BODY) {
         error(c, "variable defined outside of function body");
     }
 
-    name = statement->u.declare_variable.token.u.s;
+    name = statement->u.declare_variable.name_token->u.s;
+    type = token_to_type(c, statement->u.declare_variable.type_token);
+    if (type == NULL)
+        error(c, "unrecognized type");
 
     /* check for duplicate symbols */
     entry = hash_table_find(c->local_symbol_table, name);
@@ -467,16 +471,16 @@ static void build_types_table(hash_table_t *table, allocator_t *allocator) {
     } builtin_t;
 
     static builtin_t builtins[] = {
-        { "int8",   T_INT8   },
-        { "int16",  T_INT16  },
-        { "int32",  T_INT32  },
-        { "int64",  T_INT64  },
-        { "uint8",  T_UINT8  },
-        { "uint16", T_UINT16 },
-        { "uint32", T_UINT32 },
-        { "uint64", T_UINT64 },
-        { "float",  T_FLOAT  },
-        { "double", T_DOUBLE }
+        { "int8",   T_INT8,   sizeof(int8_t)   },
+        { "int16",  T_INT16,  sizeof(int16_t)  },
+        { "int32",  T_INT32,  sizeof(int32_t)  },
+        { "int64",  T_INT64,  sizeof(int64_t)  },
+        { "uint8",  T_UINT8,  sizeof(uint8_t)  },
+        { "uint16", T_UINT16, sizeof(uint16_t) },
+        { "uint32", T_UINT32, sizeof(uint32_t) },
+        { "uint64", T_UINT64, sizeof(uint64_t) },
+        { "float",  T_FLOAT,  sizeof(float)    },
+        { "double", T_DOUBLE, sizeof(double)   }
     };
 
     size_t num_builtins = sizeof(builtins) / sizeof(builtins[0]);
@@ -492,6 +496,10 @@ static void build_types_table(hash_table_t *table, allocator_t *allocator) {
         type->size = builtin->size;
         hash_table_insert(table, builtin->str, type);
     }
+
+    /* built in typedefs */
+    type = hash_table_find(table, "int32");
+    hash_table_insert(table, "int", type);
 }
 
 /*----------------------------------------------------------------------*/

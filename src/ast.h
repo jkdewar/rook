@@ -15,7 +15,8 @@ typedef struct ast_expression_list_t ast_expression_list_t;
 typedef struct ast_statement_t ast_statement_t;
 
 typedef struct {
-    token_t token;
+    token_t *name_token;
+    token_t *type_token;
 } ast_statement_declare_variable_t;
 
 typedef struct ast_function_parameter_t {
