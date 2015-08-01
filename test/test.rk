@@ -1,6 +1,5 @@
 func main():int
-    var x:float
+    var x:int
     x = 42
-    return x
+    return x + x
 end
-

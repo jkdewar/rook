@@ -30,8 +30,8 @@ typedef struct {
 
 typedef struct {
     const char *name;
-    type_t type;
-    uint32_t stack_pos;
+    type_t *type;
+    int32_t stack_pos;
 } symbol_table_entry_t;
 
 typedef struct function_parameter_t {
@@ -156,6 +156,7 @@ static void compile_declare_variable(compile_state_t *c, ast_statement_t *statem
     /* add variable to local symbol table */
     entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
     entry->name = name; /* TODO:jkd copy? */
+    entry->type = type;
     entry->stack_pos = c->next_local_symbol_offset;
     hash_table_insert(c->local_symbol_table, name, entry);
     c->next_local_symbol_offset += sizeof(int32_t); /* TODO:jkd */
@@ -213,8 +214,7 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
             parameter_location -= sizeof(int32_t); /* size of parameter TODO:jkd */
             entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
             entry->name = param->identifier_token.u.s; /* TODO:jkd copy? */
-            entry->type.tag = TTAG_BASIC_TYPE;       /* TODO:jkd */
-            entry->type.u.basic_type = T_INT32;
+            entry->type = NULL; /* TODO:jkd */
             /* TODO:jkd entry->location = parameter_location; */
             hash_table_insert(c->local_symbol_table, entry->name, entry);
         }
@@ -315,8 +315,8 @@ static void compile_for(compile_state_t *c, ast_statement_t *statement) {
 /*----------------------------------------------------------------------*/
 static void compile_assignment(compile_state_t *c, ast_statement_t *statement) {
     const char *name;
-    uint32_t size;
     symbol_table_entry_t *entry;
+    type_t *left_type, *right_type;
 
     /* evaluate rvalue */
     compile_expression(c, statement->u.assignment.expr);
@@ -326,10 +326,15 @@ static void compile_assignment(compile_state_t *c, ast_statement_t *statement) {
     entry = hash_table_find(c->local_symbol_table, name);
     if (entry == NULL)
         error(c, "undeclared identifier");
-    size = sizeof(int32_t); /* TODO:jkd */
+
+    /* type check */
+    left_type = entry->type;
+    right_type = statement->u.assignment.expr->type;
+    if (left_type != right_type)
+        error(c, "type mismatch in assignment");
 
     /* store in lvalue */
-    bcbuild_STORE(&c->out->bytestream, size, entry->stack_pos);
+    bcbuild_STORE(&c->out->bytestream, entry->type->size, entry->stack_pos);
 }
 
 /*----------------------------------------------------------------------*/
@@ -369,14 +374,13 @@ static void compile_literal(compile_state_t *c, ast_expression_t *expression) {
 static void compile_variable(compile_state_t *c, ast_expression_t *expression) {
     const char *name;
     symbol_table_entry_t *entry;
-    uint32_t size;
 
     name = expression->u.variable.token.u.s;
     entry = hash_table_find(c->local_symbol_table, name);
     if (entry == NULL)
         error(c, "undeclared identifier");
-    size = sizeof(int32_t); /* TODO:jkd */
-    bcbuild_LOAD(&c->out->bytestream, size, entry->stack_pos);
+    expression->type = entry->type;
+    bcbuild_LOAD(&c->out->bytestream, entry->type->size, entry->stack_pos);
 }
 
 /*----------------------------------------------------------------------*/
