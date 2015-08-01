@@ -5,7 +5,7 @@
 #include <assert.h>
 
 #define MAX_KEY_LEN 127
-#define NUM_BIN_BITS 12
+#define NUM_BIN_BITS 8
 #define NUM_BINS (1 << NUM_BIN_BITS)
 #define BIN_MASK ((1 << NUM_BIN_BITS) - 1)
 #define HASH(S) djb2(S)

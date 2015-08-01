@@ -40,7 +40,7 @@ typedef struct type_t {
 
 typedef struct struct_field_t {
     char name[MAX_STRUCT_FIELD_LEN + 1];
-    struct type_t type;
+    type_t type;
     size_t offset;
     struct struct_field_t *next;
 } struct_field_t;
