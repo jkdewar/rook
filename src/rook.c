@@ -107,11 +107,11 @@ int rook_do_file(rook_state_t *R, const char *file_name) {
         vm.ip = 0;
         vm.sp = 0;
         vm.bp = vm.sp;
-        stack_push_ui32(&vm, 0);  /* return value */
+        stack_push_d(&vm, 0.0);  /* return value */
         stack_push_ui32(&vm, ~0); /* return address */
         vm_run(&vm);
 
-        printf("result: %d\n", stack_pop_si32(&vm));
+        printf("result: %f\n", stack_pop_d(&vm));
     }
 
     R->error = 0;

@@ -1,13 +1,3 @@
-func bar()
-    return
-end
-
-func foo(x:double):double
-    return x
-end
-
-func main():int
-    var d:double
-    d = foo(123.0)
-    return 99
+func main():double
+    return 12.0 * 3.0
 end
