@@ -162,7 +162,7 @@ static void compile_declare_variable(compile_state_t *c, ast_statement_t *statem
     entry->type = type;
     entry->stack_pos = c->next_local_symbol_offset;
     hash_table_insert(c->local_symbol_table, name, entry);
-    c->next_local_symbol_offset += sizeof(int32_t); /* TODO:jkd */
+    c->next_local_symbol_offset += entry->type->size;
 }
 
 /*----------------------------------------------------------------------*/

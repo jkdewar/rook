@@ -66,10 +66,14 @@ static void error(parse_state_t *p, const char *msg) {
     token_pos_t token_pos;
     char buf[1024]; /* TODO:jkd */
     int i;
+    size_t line_size;
 
     lex_token_pos(p->in->lex_out, p->token_index == 0 ? 0 : p->token_index - 1, &token_pos);
     printf("test.bas:%ld:%ld: error: %s\n", token_pos.line_num, token_pos.line_pos, msg);
-    memcpy(buf, token_pos.line_start, token_pos.line_end - token_pos.line_start);
+    line_size = token_pos.line_end - token_pos.line_start;
+    assert(line_size < sizeof(buf)/sizeof(buf[0]));
+    memcpy(buf, token_pos.line_start, line_size);
+    buf[line_size] = '\0';
     printf("%s\n", buf);
     for (i = 0; i < token_pos.line_pos; ++i)
         printf(" ");

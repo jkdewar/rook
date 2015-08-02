@@ -1,7 +1,14 @@
+func bar(a:int, b:int):int
+    var thing:int
+    thing = a + b
+    return thing
+end
+
 func foo(x:int, y:int):int
-    return x * y
+    return bar(x + y, x - y)
 end
 
 func main():int
-    return foo(42, 10)
+    return foo(42, 33)
 end
+

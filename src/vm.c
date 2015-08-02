@@ -30,6 +30,19 @@
 #define POP_D()    stack_pop_d   (vm)
 
 /*----------------------------------------------------------------------*/
+static void stack_trace(vm_t *vm) {
+    uint32_t return_address;
+    uint32_t saved_bp;
+    uint32_t bp = vm->bp;
+    while (bp > 0) {
+        return_address = *((uint32_t*)(&vm->stack[bp - 12]));
+        printf("return address: %d\n", return_address);
+        saved_bp = *((uint32_t*)(&vm->stack[bp - 4]));
+        bp = saved_bp;
+    }
+}
+
+/*----------------------------------------------------------------------*/
 void vm_run(vm_t *vm) {
     instruction_t *inst;
 
@@ -37,6 +50,8 @@ void vm_run(vm_t *vm) {
 
     for (;;) {
         if (vm->ip >= vm->bytecode_size)
+            break;
+        if (vm->ip == 112)
             break;
         inst = (instruction_t *) &vm->bytecode[vm->ip];
         vm->ip += sizeof(instruction_t);
@@ -211,9 +226,10 @@ void vm_run(vm_t *vm) {
             case P(OP_TG, OP_ST_UI64): PUSH_BOOL(POP_UI64() > POP_UI64()); break;
             case P(OP_TG, OP_ST_F   ): PUSH_BOOL(POP_F   () > POP_F   ()); break;
             case P(OP_TG, OP_ST_D   ): PUSH_BOOL(POP_D   () > POP_D   ()); break;
-
+/*----------------------------------------------------------------------*/
             default: printf("unhandled opcode 0x%02X\n", inst->opcode); abort();
-
+/*----------------------------------------------------------------------*/
         }
     }
+    stack_trace(vm);
 }
