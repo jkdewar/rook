@@ -168,6 +168,7 @@ static void compile_declare_variable(compile_state_t *c, ast_statement_t *statem
 /*----------------------------------------------------------------------*/
 static void compile_define_function(compile_state_t *c, ast_statement_t *statement) {
     uint32_t frame_size_loc;
+    function_table_entry_t *func_entry;
 
     if (c->context != COMPILE_CONTEXT_GLOBAL)
         error(c, "local function definitions are not allowed");
@@ -175,31 +176,32 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
 
     /* add function to table */
     {
-        function_table_entry_t *entry;
         function_parameter_t *param, *prev_param;
         ast_function_parameter_t *ast_param;
 
-        entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(function_table_entry_t));
-        BZERO(entry);
-        entry->name = statement->u.define_function.name_token->u.s;
-        entry->address = bytestream_where(&c->out->bytestream);
-        entry->return_type = token_to_type(c, statement->u.define_function.return_type_token);
-        entry->parameter_count = 0;
+        func_entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(function_table_entry_t));
+        BZERO(func_entry);
+        func_entry->name = statement->u.define_function.name_token->u.s;
+        func_entry->address = bytestream_where(&c->out->bytestream);
+        func_entry->return_type = token_to_type(c, statement->u.define_function.return_type_token);
+        func_entry->parameter_count = 0;
+        func_entry->parameters_size = 0;
         prev_param = NULL;
         for (ast_param = statement->u.define_function.first_parameter;
                 ast_param != NULL; ast_param = ast_param->next) {
             param = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(function_parameter_t));
             BZERO(param);
             param->type = token_to_type(c, ast_param->type_token);
+            func_entry->parameter_count += 1;
+            func_entry->parameters_size += param->type->size;
             if (prev_param == NULL) {
-                entry->first_parameter = param;
+                func_entry->first_parameter = param;
             } else {
                 prev_param->next = param;
             }
             prev_param = param;
-            entry->parameter_count += 1;
         }
-        hash_table_insert(c->out->function_table, entry->name, entry);
+        hash_table_insert(c->out->function_table, func_entry->name, func_entry);
     }
 
     bcbuild_FRAME(&c->out->bytestream, 0, &frame_size_loc); /* frame size filled in below */
@@ -211,16 +213,16 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
      * They have negative locations, because they are stored above bp. */
     {
         uint32_t frame_junk_size = sizeof(uint32_t) * 3; /* sp, bp, return address */
-        uint32_t parameter_location = -frame_junk_size;
         ast_function_parameter_t *param;
         symbol_table_entry_t *entry;
+        int32_t stack_pos = -func_entry->parameters_size -frame_junk_size;
         for (param = statement->u.define_function.first_parameter;
                 param != NULL; param = param->next) {
-            parameter_location -= sizeof(int32_t); /* size of parameter TODO:jkd */
             entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
             entry->name = param->identifier_token->u.s;
             entry->type = token_to_type(c, param->type_token);
-            /* TODO:jkd entry->location = parameter_location; */
+            entry->stack_pos = stack_pos;
+            stack_pos += entry->type->size;
             hash_table_insert(c->local_symbol_table, entry->name, entry);
         }
     }

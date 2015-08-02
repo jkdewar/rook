@@ -17,6 +17,7 @@ typedef struct {
     type_t *return_type;
     function_parameter_t *first_parameter;
     size_t parameter_count;
+    size_t parameters_size;
 } function_table_entry_t;
 
 typedef struct {
