@@ -4,21 +4,20 @@
 #include <string.h>
 
 /*----------------------------------------------------------------------*/
-int read_file(const char *file_name, char **contents, size_t *size) {
-    size_t file_size;
+int read_file(const char *file_name, char **contents, size_t *file_size) {
     size_t read_size;
 
     FILE* file = fopen(file_name, "rb");
     if (!file)
         return 0;
     fseek(file , 0 , SEEK_END);
-    file_size = ftell(file);
+    *file_size = ftell(file);
     rewind(file);
-    *contents = malloc(file_size + 1);
-    read_size = fread(*contents, 1, file_size, file);
+    *contents = malloc(*file_size + 1);
+    read_size = fread(*contents, 1, *file_size, file);
     fclose(file);
-    contents[file_size] = '\0';
-    if (read_size != file_size) {
+    contents[*file_size] = '\0';
+    if (read_size != *file_size) {
         free(*contents);
         *contents = NULL;
         return 0;

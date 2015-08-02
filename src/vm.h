@@ -1,5 +1,6 @@
 #pragma once
-#include "bytestream.h"
+#include <stddef.h>
+#include <stdint.h>
 
 typedef struct {
     uint8_t *bytecode;

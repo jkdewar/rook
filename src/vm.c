@@ -35,8 +35,6 @@ void vm_run(vm_t *vm) {
 
     printf("\nRunning VM...\n");
 
-    vm->ip = 0;
-
     for (;;) {
         if (vm->ip >= vm->bytecode_size)
             break;

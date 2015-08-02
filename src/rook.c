@@ -101,17 +101,30 @@ int rook_do_file(rook_state_t *R, const char *file_name) {
     /* run */
     {
         vm_t vm;
+        function_table_entry_t *entry;
+
+        /* look up function "main" */
+        entry = hash_table_find(compile_output.function_table, "main");
+        if (entry == NULL) {
+            printf("main not found\n");
+            goto fail;
+        }
+
+        /* set up vm */
         vm.bytecode = compile_output.bytestream.start;
         vm.bytecode_size = compile_output.bytestream.ptr - compile_output.bytestream.start;
         vm.stack = ALLOCATOR_ALLOC(&R->allocator, 1024 * 16);
-        vm.ip = 0;
+        vm.ip = entry->address;
         vm.sp = 0;
         vm.bp = vm.sp;
-        stack_push_d(&vm, 0.0);  /* return value */
+        stack_push_si32(&vm, 0);  /* return value */
         stack_push_ui32(&vm, ~0); /* return address */
+
+        /* run vm */
         vm_run(&vm);
 
-        printf("result: %f\n", stack_pop_d(&vm));
+        /* get return value of main */
+        printf("result: %d\n", stack_pop_si32(&vm));
     }
 
     R->error = 0;

@@ -24,7 +24,6 @@ typedef struct {
     compile_context_t context;
     hash_table_t *local_symbol_table;
     uint32_t next_local_symbol_offset;
-    hash_table_t *function_table;
     hash_table_t *types_table;
 } compile_state_t;
 
@@ -33,20 +32,6 @@ typedef struct {
     type_t *type;
     int32_t stack_pos;
 } symbol_table_entry_t;
-
-typedef struct function_parameter_t {
-    const char *name;
-    type_t *type;
-    struct function_parameter_t *next;
-} function_parameter_t;
-
-typedef struct {
-    const char *name;
-    uint32_t address;
-    type_t *return_type;
-    function_parameter_t *first_parameter;
-    size_t parameter_count;
-} function_table_entry_t;
 
 static void error(compile_state_t *c, const char *msg);
 static void compile_statement_list(compile_state_t *c, ast_statement_t *first_statement);
@@ -71,6 +56,7 @@ void compile(compile_input_t *in, compile_output_t *out) {
     compile_state_t compile_state;
     compile_state_t *c = &compile_state;
 
+    /* setup */
     c->in = in;
     c->out = out;
     c->out->error = 0;
@@ -78,15 +64,31 @@ void compile(compile_input_t *in, compile_output_t *out) {
     bytestream_init(&c->out->bytestream, 1024 * 16);
     c->context = COMPILE_CONTEXT_GLOBAL;
     c->local_symbol_table = hash_table_create(c->in->allocator);
-    c->function_table = hash_table_create(c->in->allocator);
+    c->out->function_table = hash_table_create(c->in->allocator);
     c->types_table = hash_table_create(c->in->allocator);
     build_types_table(c->types_table, c->in->allocator);
 
     if (setjmp(c->jmpbuf)) {
+        /* if an error occurs, longjmp ends up here */
         return;
     }
 
+    /* start compilation process */
     compile_statement_list(c, c->in->parse_out->first_statement);
+
+#if 0
+    /* dump symbol table */
+    {
+        hash_table_iter_t iter;
+        printf("--- function table ---\n");
+        for (hash_table_first(c->out->function_table, &iter); iter.value != NULL;
+                hash_table_next(c->out->function_table, &iter)) {
+            function_table_entry_t *entry = iter.value;
+            printf("%s\n", entry->name);
+        }
+        printf("----------------------\n");
+    }
+#endif
 }
 
 /*----------------------------------------------------------------------*/
@@ -156,7 +158,7 @@ static void compile_declare_variable(compile_state_t *c, ast_statement_t *statem
 
     /* add variable to local symbol table */
     entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
-    entry->name = name; /* TODO:jkd copy? */
+    entry->name = name;
     entry->type = type;
     entry->stack_pos = c->next_local_symbol_offset;
     hash_table_insert(c->local_symbol_table, name, entry);
@@ -179,7 +181,7 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
 
         entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(function_table_entry_t));
         BZERO(entry);
-        entry->name = statement->u.define_function.name_token->u.s; /* TODO:jkd copy? */
+        entry->name = statement->u.define_function.name_token->u.s;
         entry->address = bytestream_where(&c->out->bytestream);
         entry->return_type = token_to_type(c, statement->u.define_function.return_type_token);
         entry->parameter_count = 0;
@@ -197,7 +199,7 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
             prev_param = param;
             entry->parameter_count += 1;
         }
-        hash_table_insert(c->function_table, entry->name, entry);
+        hash_table_insert(c->out->function_table, entry->name, entry);
     }
 
     bcbuild_FRAME(&c->out->bytestream, 0, &frame_size_loc); /* frame size filled in below */
@@ -216,7 +218,7 @@ static void compile_define_function(compile_state_t *c, ast_statement_t *stateme
                 param != NULL; param = param->next) {
             parameter_location -= sizeof(int32_t); /* size of parameter TODO:jkd */
             entry = ALLOCATOR_ALLOC(c->out->bytestream.allocator, sizeof(symbol_table_entry_t));
-            entry->name = param->identifier_token->u.s; /* TODO:jkd copy? */
+            entry->name = param->identifier_token->u.s;
             entry->type = token_to_type(c, param->type_token);
             /* TODO:jkd entry->location = parameter_location; */
             hash_table_insert(c->local_symbol_table, entry->name, entry);
@@ -400,7 +402,7 @@ static void compile_function_call(compile_state_t *c, ast_expression_t *expressi
     function_name = expression->u.function_call.identifier->u.s;
 
     /* look up function in table */
-    entry = hash_table_find(c->function_table, function_name);
+    entry = hash_table_find(c->out->function_table, function_name);
     if (entry == NULL)
         error(c, "call to undefined function");
 
@@ -485,7 +487,7 @@ static void build_types_table(hash_table_t *table, allocator_t *allocator) {
         size_t size;
     } builtin_t;
 
-    static builtin_t builtins[] = {
+    static builtin_t built_ins[] = {
         { "int8",   T_INT8,   sizeof(int8_t)   },
         { "int16",  T_INT16,  sizeof(int16_t)  },
         { "int32",  T_INT32,  sizeof(int32_t)  },
@@ -498,18 +500,18 @@ static void build_types_table(hash_table_t *table, allocator_t *allocator) {
         { "double", T_DOUBLE, sizeof(double)   }
     };
 
-    size_t num_builtins = sizeof(builtins) / sizeof(builtins[0]);
+    size_t num_built_ins = sizeof(built_ins) / sizeof(built_ins[0]);
     size_t i;
-    builtin_t *builtin;
+    builtin_t *built_in;
     type_t *type;
 
-    for (i = 0; i < num_builtins; ++i) {
-        builtin = &builtins[i];
+    for (i = 0; i < num_built_ins; ++i) {
+        built_in = &built_ins[i];
         type =  ALLOCATOR_ALLOC(allocator, sizeof(type_t));
         type->tag = TTAG_BASIC_TYPE;
-        type->u.basic_type = builtin->basic_type;
-        type->size = builtin->size;
-        hash_table_insert(table, builtin->str, type);
+        type->u.basic_type = built_in->basic_type;
+        type->size = built_in->size;
+        hash_table_insert(table, built_in->str, type);
     }
 
     /* built in typedefs */

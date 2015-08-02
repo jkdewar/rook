@@ -5,7 +5,6 @@
 #define INST(OP) instruction_t i;  memset(&i, 0xff, sizeof(instruction_t)); i.opcode = OP
 #define PUSH() bytestream_pushn(bs, &i, sizeof(instruction_t));
 
-
 /*----------------------------------------------------------------------*/
 void bcbuild_STORE(bytestream_t *bs, uint32_t size, int32_t stack_pos) {
     INST(OP_STORE);

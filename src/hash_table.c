@@ -57,22 +57,48 @@ void hash_table_clear(hash_table_t *hash_table, int free_values) {
 /*----------------------------------------------------------------------*/
 void hash_table_insert(hash_table_t *hash_table, const char *key, void *value) {
     hash_table_entry_t *new_entry;
-    uint32_t bin_index = HASH(key) & BIN_MASK;
+    uint32_t bin = HASH(key) & BIN_MASK;
     new_entry = ALLOCATOR_ALLOC(hash_table->allocator, sizeof(hash_table_entry_t));
     assert(strlen(key) < MAX_KEY_LEN);
     strcpy(new_entry->key, key);
     new_entry->value = value;
-    new_entry->next = hash_table->bins[bin_index];
-    hash_table->bins[bin_index] = new_entry;
+    new_entry->next = hash_table->bins[bin];
+    hash_table->bins[bin] = new_entry;
 }
 
 /*----------------------------------------------------------------------*/
 void *hash_table_find(hash_table_t *hash_table, const char *key) {
     hash_table_entry_t *entry;
-    uint32_t bin_index = HASH(key) & BIN_MASK;
-    for (entry = hash_table->bins[bin_index]; entry != NULL; entry = entry->next) {
+    uint32_t bin = HASH(key) & BIN_MASK;
+    for (entry = hash_table->bins[bin]; entry != NULL; entry = entry->next) {
         if (strcmp(key, entry->key) == 0)
             return entry->value;
     }
     return NULL;
+}
+
+/*----------------------------------------------------------------------*/
+void hash_table_first(hash_table_t *hash_table, hash_table_iter_t *iter) {
+    iter->entry = NULL;
+    iter->bin = ~0; /* -1, will be incremented to 0 by _next() */
+    hash_table_next(hash_table, iter);
+}
+
+/*----------------------------------------------------------------------*/
+void hash_table_next(hash_table_t *hash_table, hash_table_iter_t *iter) {
+    if (iter->entry != NULL && iter->entry->next != NULL) {
+        iter->entry = iter->entry->next;
+        iter->value = iter->entry->value;
+        return;
+    }
+    iter->bin += 1;
+    while (iter->bin < NUM_BINS && hash_table->bins[iter->bin] == NULL) {
+        iter->bin += 1;
+    }
+    if (iter->bin < NUM_BINS) {
+        iter->entry = hash_table->bins[iter->bin];
+        iter->value = iter->entry->value;
+    } else {
+        iter->value = NULL;
+    }
 }
