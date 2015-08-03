@@ -20,12 +20,9 @@ solution "rook"
     if _OS == "macosx" then
       files { "../src/**.m" }
       defines { }
-      includedirs {
-      }
-      libdirs {
-      }
-      links {
-      }
+      includedirs { }
+      libdirs { }
+      links { }
       buildoptions {
         "-std=c89",
         "-pedantic-errors",
@@ -36,7 +33,14 @@ solution "rook"
 
     elseif _OS == "linux" then
       defines { }
+      includedirs { }
+      libdirs { }
       links { }
+      buildoptions {
+        "-std=c89",
+        "-pedantic-errors",
+        "-Wall"
+      }
 
 --- Windows ----------------------------------------------------------
 

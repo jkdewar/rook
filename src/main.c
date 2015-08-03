@@ -2,6 +2,7 @@
 #include "allocator/linear_allocator.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 void test();
 
